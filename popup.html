@@ -1,0 +1,60 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:720px;height:500px;font:11px/1.4 -apple-system,sans-serif;background:#1a1a2e;color:#e0e0e0;display:flex;flex-direction:column;overflow:hidden}
+.bar{display:flex;gap:6px;padding:6px 8px;background:#16213e;border-bottom:1px solid #0f3460;align-items:center;flex-shrink:0}
+.bar button{padding:4px 10px;border:1px solid #0f3460;border-radius:3px;background:#0f3460;color:#e0e0e0;cursor:pointer;font-size:11px}
+.bar button:hover{background:#1a5276}
+.bar .y{background:#f39c12;border-color:#f39c12;color:#000}
+.bar .g{background:#2ecc71;border-color:#2ecc71;color:#fff}
+.bar .info{flex:1;font-size:10px}
+.bar .n{color:#e94560;font-weight:bold}
+.tabs{display:flex;background:#16213e;border-bottom:1px solid #0f3460;flex-shrink:0}
+.tab{padding:6px 12px;cursor:pointer;border-bottom:2px solid transparent;font-size:11px}
+.tab.active{border-bottom-color:#e94560;color:#e94560}
+.main{flex:1;overflow-y:auto;padding:6px}
+table{width:100%;border-collapse:collapse;font-size:10px}
+th{text-align:left;padding:3px 5px;background:#0f3460;color:#a0a0a0;font-weight:normal;position:sticky;top:0}
+td{padding:2px 5px;border-bottom:1px solid #0f3460;word-break:break-all}
+tr:hover{background:#1a1a3e}
+.badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:9px;white-space:nowrap}
+.b-CRITICAL{background:#e94560;color:#fff}.b-HIGH{background:#f39c12;color:#000}.b-MEDIUM{background:#2ecc71;color:#fff}.b-LOW{background:#3498db;color:#fff}.b-INFO{background:#666;color:#fff}
+.s-2xx{color:#2ecc71}.s-3xx{color:#f39c12}.s-4xx{color:#e74c3c}.s-5xx{color:#e94560}
+.mono{font-family:monospace;font-size:10px}
+.fw{background:#1a5276;padding:1px 6px;border-radius:8px;font-size:10px;margin:1px;display:inline-block}
+.fw:hover{background:#3498db}
+.empty{text-align:center;color:#555;padding:20px}
+input[type=text]{background:#0f3460;color:#e0e0e0;border:1px solid #1a5276;border-radius:3px;padding:3px 6px;font-size:10px;width:180px}
+.fuzz-row{cursor:pointer}.fuzz-row:hover{background:#1a3a2e}.fuzz-row.selected{background:#0f3460}
+.resp-panel{background:#0a0a15;border:1px solid #0f3460;margin:4px 8px;border-radius:4px;overflow:hidden;display:none}
+.resp-panel.show{display:block}
+.resp-hdr{display:flex;justify-content:space-between;padding:4px 8px;background:#16213e;font-size:10px}
+.resp-body{padding:6px 8px;font:10px monospace;max-height:200px;overflow:auto;white-space:pre-wrap;word-break:break-all;color:#2ecc71}
+.resp-body.html{color:#f39c12}
+.resp-body.error{color:#e74c3c}
+</style></head><body>
+<div class="bar">
+  <span class="info">API:<span class="n" id="apiC">0</span> JS:<span class="n" id="jsC">0</span> <span id="fwT"></span><span id="cfgT"></span></span>
+  <input type="text" id="hdrs" placeholder="🔑 粘贴Token: Authorization: Bearer xxx 或 Cookie: xxx" style="width:280px">
+  <button class="y" id="btnFuzz">⚡ Fuzz</button>
+  <button id="btnHit">⬇ 命中</button>
+  <button id="btnDict">⬇ 字典</button>
+  <button class="g" id="btnClear">清空</button>
+</div>
+<div class="tabs">
+  <div class="tab active" data-tab="apis">被动发现</div>
+  <div class="tab" data-tab="fuzz">Fuzz (<span id="fC">0</span>)</div>
+</div>
+<div class="main">
+  <div id="tab-apis">
+    <table><thead><tr><th>路径</th><th width="40">方法</th><th width="55">分类</th><th width="55">风险</th></tr></thead><tbody id="apiB"></tbody></table>
+    <div class="empty" id="apiE">打开任意网页自动收集API</div>
+  </div>
+  <div id="tab-fuzz" style="display:none">
+    <div class="bar" style="margin-bottom:4px"><span class="info" id="fS">就绪 — 点⚡Fuzz开始</span></div>
+    <table><thead><tr><th>路径</th><th width="35">方法</th><th width="35">状态</th><th width="45">大小</th><th>指纹</th><th width="55">风险</th></tr></thead><tbody id="fB"></tbody></table>
+    <div class="empty" id="fE">点击⚡Fuzz探测收集到的接口</div>
+  </div>
+</div>
+<script src="src/core/dict-generator.js"></script>
+<script src="popup.js"></script>
+</body></html>
