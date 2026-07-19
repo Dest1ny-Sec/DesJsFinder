@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+/* ============================================================
+   DesJsFinder v1.3 — 红队实战优化
+   ============================================================ */
+:root {
+  --bg:#080c14; --panel:#0d1321; --surface:#111827; --hover:#1a2340;
+  --input:#0c1525; --border:#1e2d4a; --border-glow:#2a4070;
+  --text:#c0c8d8; --dim:#5e6d8c; --bright:#e2e8f4;
+  --red:#ff3355; --red-glow:rgba(255,51,85,.35);
+  --amber:#f0a020; --grn:#00c978; --blue:#38bdf8;
+  --mono:"JetBrains Mono","SF Mono","Fira Code",Consolas,monospace;
+  --ui:system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:3px; --r2:5px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  width:720px;height:520px;font:11px/1.45 var(--ui);
+  background:var(--bg);color:var(--text);
+  display:flex;flex-direction:column;overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-glow)}
+
+/* ====== HEADER BAR ====== */
+.bar{
+  display:flex;gap:5px;padding:5px 8px;
+  background:var(--panel);border-bottom:1px solid var(--border);
+  align-items:center;flex-shrink:0;flex-wrap:nowrap;overflow:hidden;
+}
+.bar .stats{display:flex;gap:6px;align-items:center;flex-shrink:0;font-size:10px}
+.bar .stats span{color:var(--dim)}
+.bar .stats b{font-family:var(--mono);font-size:12px;color:var(--bright)}
+.bar .stats b.hot{color:var(--red)}
+.bar .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--grn);box-shadow:0 0 5px rgba(0,201,120,.4);margin-right:2px;vertical-align:middle}
+.bar .dot.idle{background:var(--dim);box-shadow:none}
+.bar .fw-row{display:flex;gap:2px;max-width:140px;overflow:hidden;flex-shrink:1}
+.bar .fw{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-family:var(--mono);background:rgba(56,189,248,.1);color:var(--blue);border:1px solid rgba(56,189,248,.18);white-space:nowrap}
+
+.bar input[type=text]{
+  background:var(--input);color:var(--text);border:1px solid var(--border);
+  border-radius:var(--r);padding:3px 7px;font-size:10px;outline:none;
+}
+.bar input:focus{border-color:var(--blue)}
+.bar input.sm{width:80px}
+
+.bar button{
+  padding:3px 10px;border:1px solid var(--border);border-radius:var(--r);
+  background:var(--surface);color:var(--text);cursor:pointer;
+  font-size:10px;font-family:var(--ui);white-space:nowrap;
+  transition:all .12s;
+}
+.bar button:hover{background:var(--hover);border-color:var(--border-glow);color:var(--bright)}
+.bar button.primary{
+  background:var(--red);border-color:var(--red);color:#fff;
+  font-weight:600;letter-spacing:.03em;box-shadow:0 0 10px var(--red-glow);
+}
+.bar button.primary:hover{background:#ff4d6a}
+.bar button.primary.running{background:var(--amber);border-color:var(--amber);box-shadow:0 0 10px rgba(240,160,32,.4);animation:none}
+.bar button.danger{color:var(--red);border-color:var(--red)}
+.bar button.danger:hover{background:rgba(255,51,85,.1)}
+.bar label.proxy{display:flex;align-items:center;gap:3px;font-size:9px;color:var(--dim);cursor:pointer;white-space:nowrap}
+.bar label.proxy input{accent-color:var(--red)}
+
+/* ====== TABS ====== */
+.tabs{
+  display:flex;background:var(--panel);border-bottom:1px solid var(--border);
+  flex-shrink:0;overflow-x:auto;padding:0 4px;
+}
+.tab{
+  padding:5px 10px;cursor:pointer;font-size:10px;font-family:var(--mono);
+  color:var(--dim);border-bottom:2px solid transparent;
+  transition:all .15s;white-space:nowrap;
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--bright);border-bottom-color:var(--red)}
+.tab[data-tab="fuzz"]{color:var(--amber)}
+.tab[data-tab="fuzz"].active{border-bottom-color:var(--amber)}
+
+/* ====== MAIN ====== */
+.main{flex:1;overflow-y:auto;padding:6px;scroll-behavior:smooth}
+
+/* ====== SECTION ====== */
+.section{margin-bottom:8px;border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;background:var(--surface)}
+.section-hdr{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--panel);border-bottom:1px solid var(--border);font-size:10px;color:var(--dim)}
+.section-hdr b{color:var(--amber);font-family:var(--mono);font-size:11px}
+.section-hdr button{padding:2px 8px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--dim);cursor:pointer;font-size:9px;transition:all .12s}
+.section-hdr button:hover{color:var(--text);border-color:var(--border-glow)}
+
+/* ====== VERTICAL LIST ====== */
+.list{display:flex;flex-direction:column}
+.row{
+  display:flex;align-items:center;gap:8px;padding:5px 8px;
+  border-bottom:1px solid rgba(30,45,74,.4);cursor:pointer;
+  transition:background .1s;font-size:10px;
+}
+.row:last-child{border-bottom:none}
+.row:hover{background:var(--hover)}
+.row .path{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .method{color:var(--dim);font-size:9px;font-weight:600;min-width:36px;text-align:center}
+.row .lbl{color:var(--dim);min-width:60px;flex-shrink:0}
+
+.mono{font-family:var(--mono);font-size:10px}
+
+/* ====== BADGES ====== */
+.badge{display:inline-block;padding:1px 6px;border-radius:8px;font-size:8px;font-weight:600;white-space:nowrap;flex-shrink:0}
+.b-CRITICAL{background:var(--red);color:#fff}
+.b-HIGH{background:rgba(240,160,32,.2);color:var(--amber);border:1px solid rgba(240,160,32,.3)}
+.b-MEDIUM{background:rgba(0,201,120,.15);color:var(--grn);border:1px solid rgba(0,201,120,.25)}
+.b-LOW{background:rgba(56,189,248,.12);color:var(--blue);border:1px solid rgba(56,189,248,.2)}
+.b-INFO{background:rgba(94,109,140,.12);color:var(--dim)}
+
+/* ====== STATUS COLORS ====== */
+.s-2xx{color:var(--grn);min-width:28px;text-align:center;font-weight:600}
+.s-3xx{color:var(--amber);min-width:28px;text-align:center;font-weight:600}
+.s-4xx{color:#f87171;min-width:28px;text-align:center;font-weight:600}
+.s-5xx{color:var(--red);min-width:28px;text-align:center;font-weight:600}
+
+/* ====== FUZZ ====== */
+.fuzz-row.sel{background:rgba(56,189,248,.08);border-left:2px solid var(--blue)}
+.resp-panel{display:none;background:#060b15;border-top:1px solid var(--border);padding:0}
+.resp-panel.show{display:block}
+.resp-hdr{display:flex;justify-content:space-between;padding:4px 10px;background:var(--panel);font-size:9px;color:var(--dim);border-bottom:1px solid var(--border)}
+.resp-body{padding:8px 10px;font:10px/1.5 var(--mono);max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-all;color:var(--grn)}
+.resp-body.error{color:var(--red)}
+
+/* ====== EMPTY & TIP ====== */
+.empty{text-align:center;color:var(--dim);padding:40px 20px;font-size:11px;opacity:.6}
+.tip{position:fixed;background:var(--panel);color:var(--bright);padding:5px 10px;border-radius:var(--r);font-size:10px;z-index:99999;pointer-events:none;border:1px solid var(--border-glow);box-shadow:0 4px 16px rgba(0,0,0,.5);font-family:var(--mono)}
+.cfg-desc{color:var(--dim);font-size:9px;padding:4px 10px}
+.save-btn{padding:4px 14px;border:none;border-radius:var(--r);background:var(--grn);color:#000;cursor:pointer;font-size:10px;font-weight:600;margin:0 10px 8px}
+.save-btn:hover{background:#00e08a}
+
+@media(prefers-reduced-motion:reduce){*{transition-duration:0s!important}}
+</style></head><body>
+
+<!-- ====== HEADER ====== -->
+<div class="bar">
+  <div class="stats">
+    <span><span class="dot" id="statusDot"></span><b class="hot" id="apiC">0</b> APIs</span>
+  </div>
+  <div class="fw-row" id="fwT"></div>
+  <input type="text" id="hdrs" placeholder="Token / Cookie" style="width:120px;flex-shrink:1">
+  <button class="primary" id="btnFuzz">FUZZ</button>
+  <span id="fuzzPreview" style="font-size:9px;color:var(--dim);white-space:nowrap;flex-shrink:0"></span>
+  <button id="btnHit">命中</button>
+  <button id="btnDict">字典</button>
+  <button class="danger" id="btnClear">清空</button>
+</div>
+
+<!-- ====== TABS ====== -->
+<div class="tabs">
+  <div class="tab active" data-tab="apis">接口</div>
+  <div class="tab" data-tab="runtimeReqs">实时</div>
+  <div class="tab" data-tab="secrets">凭据</div>
+  <div class="tab" data-tab="fingerprint">指纹</div>
+  <div class="tab" data-tab="config">设置</div>
+  <div class="tab" data-tab="fuzz">探测</div>
+</div>
+
+<!-- ====== MAIN ====== -->
+<div class="main"><div id="tab-content"></div></div>
+
+<script src="src/core/dict-generator.js"></script>
+<script src="popup.js"></script>
+</body></html>

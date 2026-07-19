@@ -1,0 +1,41 @@
+{
+  "name": "DesJsFinder",
+  "version": "1.2",
+  "author": "Dest1ny",
+  "description": "被动JS分析 + 框架识别 + 主动Fuzz + 指纹识别 + 动态扫描 + 深度扫描 — 红队API挖掘利器",
+  "manifest_version": 3,
+  "permissions": ["storage", "scripting", "activeTab", "webNavigation", "webRequest", "proxy", "offscreen", "declarativeNetRequestWithHostAccess"],
+  "host_permissions": ["<all_urls>", "https://cn.apihz.cn/*"],
+  "content_scripts": [{
+    "matches": ["https://*/*", "http://*/*"],
+    "js": ["injector.js"],
+    "run_at": "document_start",
+    "world": "MAIN"
+  }, {
+    "matches": ["https://*/*", "http://*/*"],
+    "js": [
+      "filters/api-filter.js",
+      "filters/framework-detect.js",
+      "content.js"
+    ],
+    "run_at": "document_idle"
+  }],
+  "web_accessible_resources": [{
+    "resources": [
+      "filters/api-filter.js",
+      "filters/framework-detect.js",
+      "filters/response-fingerprint.js",
+      "filters/wappalyzer-data.json",
+      "filters/wappalyzer-engine.js",
+      "src/core/dict-generator.js"
+    ],
+    "matches": ["<all_urls>"]
+  }],
+  "action": {
+    "default_title": "API Fuzzer Pro",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+  },
+  "background": { "service_worker": "background.js" },
+  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+}
