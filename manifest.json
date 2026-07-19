@@ -1,6 +1,6 @@
 {
   "name": "DesJsFinder",
-  "version": "1.2",
+  "version": "1.3",
   "author": "Dest1ny",
   "description": "被动JS分析 + 框架识别 + 主动Fuzz + 指纹识别 + 动态扫描 + 深度扫描 — 红队API挖掘利器",
   "manifest_version": 3,
