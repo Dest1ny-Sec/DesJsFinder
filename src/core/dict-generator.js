@@ -149,14 +149,16 @@ const DictGenerator = {
     const result = []; const seen = new Set()
     const add = (url, method) => { if (!seen.has(url+'|'+method)) { seen.add(url+'|'+method); result.push({ url, method }) } }
     const addDual = (url) => {
-      const isStatic = /\.(css|js|png|jpe?g|gif|svg|ico|woff2?|ttf|eot|map|pdf|zip|rar|mp[34]|webm|wasm|html?|htm)(\?.*)?$/i.test(url)
-      if (isStatic) { add(url, 'GET'); return }
-      const m = this._method(url)
-      add(url, m)
+      // 归一化: 去掉末尾 \ 和 / (JS 字符串残留的转义符)
+      const u = String(url||'').replace(/[\\\/]+$/, '').replace(/\\+$/,'')
+      const isStatic = /\.(woff2?|ttf|eot|otf|jpe?g|png|gif|svg|webp|avif|apng|ico|bmp|jsx?|tsx?|vue|mjs|cjs|css|scss|sass|less|styl|mp[34]|m4a|3gp|avi|mov|wmv|flv|webm|mkv|mp3|wav|ogg|oga|pdf|docx?|xlsx?|pptx?|txt|md|csv|wasm|webmanifest|manifest|map|br|gz|zip|rar|7z|tar|iso|html?|htm)(\?.*)?$/i.test(u)
+      if (isStatic) return  // 静态资源直接丢弃, 不要再加 (上一版本还 add 一次浪费一个槽位)
+      const m = this._method(u)
+      add(u, m)
       // 修复: 原逻辑 m !== 'GET' && m !== 'POST' 让每个 path 最多 fuzz 3 次 (原 method + GET + POST).
       // 200 条 path 实际请求 600 次, 大量 POST {} 噪音. 改为只补一个错配 method 探测 method-not-allowed 行为.
-      if (m === 'GET') add(url, 'POST')
-      else add(url, 'GET')
+      if (m === 'GET') add(u, 'POST')
+      else add(u, 'GET')
     }
     // runtime URL params + POST body params
     const rp = (runtimeParams || []).slice(0, 15).filter(k => k.length >= 2 && k.length <= 20 && !/^(fp|msToken|a_bogus|timestamp|webid|verify)/i.test(k))
@@ -223,7 +225,7 @@ const DictGenerator = {
     const seen = new Set()
     for (const p of paths) {
       // skip file extensions — can't infer CRUD from files
-      if (/\.(html?|htm|php|jsp|asp|aspx|do|action|json|xml|css|js|png|jpg)$/i.test(p)) continue
+      if (/\.(html?|htm|php|jsp|asp|aspx|do|action|json|xml|css|js|png|jpg|svg|avif|webmanifest|wasm)$/i.test(p)) continue
       const clean = p.replace(/\/$/, '')
       const parts = clean.split('/').filter(Boolean)
       if (parts.length < 2) continue
@@ -279,7 +281,7 @@ const DictGenerator = {
 
   _recurse(add, p) {
     // skip paths with file extensions — can't recurse into files
-    if (/\.(html?|htm|php|jsp|asp|aspx|do|action|json|xml)$/i.test(p)) return
+    if (/\.(html?|htm|php|jsp|asp|aspx|do|action|json|xml|svg|avif|webmanifest|wasm)$/i.test(p)) return
     const ids = ['1', '0', 'admin', 'self', 'me', 'profile', 'info', 'detail', 'all', 'tree', 'root']
     const lp = p.toLowerCase()
     // /api/users → /api/users/1, /api/users/admin

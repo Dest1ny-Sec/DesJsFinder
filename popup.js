@@ -68,13 +68,18 @@ chrome.storage.local.get(['proxyUrl', 'proxyEnabled'], r => {
 })
 
 // ====== 秒开缓存 ======
-chrome.storage.local.get(['lastData', 'lastFuzzRes', 'lastFuzzTotal', 'fuzzTruncated', 'fuzzTruncatedCount'], r => {
+chrome.storage.local.get(['lastData', 'lastFuzzRes', 'lastFuzzTotal', 'lastFuzzUrl', 'fuzzTruncated', 'fuzzTruncatedCount'], r => {
   if (r.lastData?.apis?.length) { data = r.lastData; render(); updateBar() }
-  if (r.lastFuzzRes?.length) { fuzzRes = r.lastFuzzRes; total = r.lastFuzzTotal || 0 }
-  if (r.fuzzTruncated && r.fuzzTruncatedCount) {
-    showTip(`上次Fuzz结果已截断: 显示200/${r.fuzzTruncatedCount}条`)
+  // 跨站保护: 缓存的 fuzz 结果只对同一 URL 生效. 切到新站 → 清空, 避免"莫名其妙的记录".
+  if (r.lastFuzzRes?.length && r.lastFuzzUrl && data.url && r.lastFuzzUrl === data.url) {
+    fuzzRes = r.lastFuzzRes; total = r.lastFuzzTotal || 0
+    if (r.fuzzTruncated && r.fuzzTruncatedCount) {
+      showTip(`上次Fuzz结果已截断: 显示200/${r.fuzzTruncatedCount}条`)
+    }
+  } else if (r.lastFuzzRes?.length) {
+    // URL 不匹配 → 视为过期缓存, 清掉避免下次再误显示
+    chrome.storage.local.remove(['lastFuzzRes', 'lastFuzzTotal', 'lastFuzzUrl', 'fuzzTruncated', 'fuzzTruncatedCount'])
   }
-  // always default to APIs tab, even if saved fuzz results exist
 })
 
 // ====== Tab 切换 ======
@@ -98,6 +103,11 @@ function refresh() {
     if (!fields.some(k => (d[k]||[]).length) && !(d.fw||[]).length) return
     if (d.fwExploits) fwExploits = d.fwExploits
     if (d.fwKeyMap) fwKeyMap = d.fwKeyMap
+    // 跨站保护: 同一 popup session 内 data.url 变化时 (如切换 tab 或跳到新站), 立即清空 fuzz 结果
+    if (data.url && d.url && data.url !== d.url && fuzzRes.length) {
+      fuzzRes = []; total = 0; _expandedPanels.clear()
+      chrome.storage.local.remove(['lastFuzzRes', 'lastFuzzTotal', 'lastFuzzUrl', 'fuzzTruncated', 'fuzzTruncatedCount'])
+    }
     data = d
     data.tabId = data.tabId || d.tabId
     chrome.storage.local.set({ lastData: data })
@@ -331,7 +341,7 @@ document.getElementById('btnFuzz').onclick = () => {
     btn.textContent = 'FUZZ'; btn.classList.remove('running')
     removeProxy()
     const totalResults = fuzzRes.length
-    chrome.storage.local.set({ lastFuzzRes: fuzzRes.slice(0, 200), lastFuzzTotal: total, fuzzTruncated: totalResults > 200, fuzzTruncatedCount: totalResults })
+    chrome.storage.local.set({ lastFuzzRes: fuzzRes.slice(0, 200), lastFuzzTotal: total, lastFuzzUrl: data.url || '', fuzzTruncated: totalResults > 200, fuzzTruncatedCount: totalResults })
     refresh()
     if (!timer) timer = setInterval(refresh, 1500)
     return
@@ -354,9 +364,10 @@ document.getElementById('btnFuzz').onclick = () => {
   for (const r of (data.runtimeReqs||[])) {
     try { new URL(r.url).searchParams.forEach((_, k) => runtimeParams.add(k)) } catch(e) {}
   }
-  // filter static files from API list before generating dict
-  const staticFileRe = /\.(css|js|png|jpe?g|gif|svg|ico|woff2?|ttf|eot|map|pdf|zip|rar|mp[34]|webm|wasm)(\?.*)?$/i
-  const cleanPaths = (data.apis||[]).filter(a => !staticFileRe.test(a.path)).map(a => a.path)
+  // filter static files from API list before generating dict (统一清单, 末尾 \ 也算)
+  const staticFileRe = /\.(woff2?|ttf|eot|otf|jpe?g|png|gif|svg|webp|avif|apng|ico|bmp|jsx?|tsx?|vue|mjs|cjs|css|scss|sass|less|styl|mp[34]|m4a|3gp|avi|mov|wmv|flv|webm|mkv|mp3|wav|ogg|oga|pdf|docx?|xlsx?|pptx?|txt|md|csv|wasm|webmanifest|manifest|map|br|gz|zip|rar|7z|tar|iso)(\?.*)?$/i
+  const normPath = p => String(p||'').replace(/[\\\/]+$/, '').replace(/\\+$/,'')
+  const cleanPaths = (data.apis||[]).filter(a => !staticFileRe.test(normPath(a.path))).map(a => normPath(a.path))
   const useGeneric = document.getElementById('useGenericDict')?.checked || false
   // 采纳 ParamX: 把提取的 JS 参数并入 POST body 参数集 (高优先级优先), 用于 update/create 类接口的 body Fuzz
   const extractedParams = (data.params || []).filter(p => p.priority >= 3).map(p => p.value)
@@ -378,7 +389,8 @@ document.getElementById('btnFuzz').onclick = () => {
     return 1 // inferred / framework
   }
   dict.sort((a,b) => priority(a.url) - priority(b.url))
-  dict.forEach(d => { const k = d.url+d.method; if (!s.has(k)&&dedup.length<500) { s.add(k); dedup.push(d) } })
+  // dedup 键也用归一化: 避免 /social/feishu\ 和 /social/feishu 都被加进 fuzz 队列
+  dict.forEach(d => { const k = normPath(d.url)+d.method; if (!s.has(k)&&dedup.length<500) { s.add(k); dedup.push(d) } })
   total = dedup.length
 
   // show dict breakdown
@@ -417,7 +429,7 @@ document.getElementById('btnFuzz').onclick = () => {
       b.textContent = 'FUZZ'; b.classList.remove('running')
       removeProxy(); renderFuzz()
       const totalResults = fuzzRes.length
-      chrome.storage.local.set({ lastFuzzRes: fuzzRes.slice(0, 200), lastFuzzTotal: total, fuzzTruncated: totalResults > 200, fuzzTruncatedCount: totalResults })
+      chrome.storage.local.set({ lastFuzzRes: fuzzRes.slice(0, 200), lastFuzzTotal: total, lastFuzzUrl: data.url || '', fuzzTruncated: totalResults > 200, fuzzTruncatedCount: totalResults })
       if (!timer) timer = setInterval(refresh, 1500)
     }
   }
@@ -435,7 +447,11 @@ function _renderFuzzNow() {
   const c = document.getElementById('tab-content')
   if (!c || activeTab !== 'fuzz') return
 
-  const ok = fuzzRes.filter(r => r.status !== 404 && r.status !== 0 && r.status !== 501)
+  // 兜底过滤: 即使旧缓存或 dict 漏过, 静态资源也不显示在 fuzz 结果里 (它们没参数可 fuzz, 是噪音)
+  // 归一化末尾 \\ 和 / 后再判
+  const _norm = u => String(u||'').replace(/[\\\/]+$/,'').replace(/\\+$/,'')
+  const _isStaticAsset = u => /\.(woff2?|ttf|eot|otf|jpe?g|png|gif|svg|webp|avif|apng|ico|bmp|jsx?|tsx?|vue|mjs|cjs|css|scss|sass|less|styl|mp[34]|m4a|3gp|avi|mov|wmv|flv|webm|mkv|mp3|wav|ogg|oga|pdf|docx?|xlsx?|pptx?|txt|md|csv|wasm|webmanifest|manifest|map|br|gz|zip|rar|7z|tar|iso)(\?.*)?$/i.test(_norm(u))
+  const ok = fuzzRes.filter(r => r.status !== 404 && r.status !== 0 && r.status !== 501 && !_isStaticAsset(r.url))
   let list = ok
   if (_fuzzFilter === '2xx') list = ok.filter(r => r.status >= 200 && r.status < 300)
   else if (_fuzzFilter === '3xx') list = ok.filter(r => r.status >= 300 && r.status < 400)
@@ -469,9 +485,11 @@ function _renderFuzzNow() {
     <button id="copyHits" style="padding:2px 8px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--dim);cursor:pointer;font-size:9px">复制命中</button>
   </div><div class="list">`
   // merge same URL + same status → single row with combined methods
+  // 归一化 URL 键: 去除末尾 \ 和 / (应对 JS 字符串残留的转义), 让 social/feishu\ 和 social/feishu 合并成一条
+  const normUrl = u => String(u||'').replace(/[\\\/]+$/,'').replace(/\\+$/,'')
   const merged = []; const mergeSeen = new Set()
   for (const r of list) {
-    const key = r.url + '|' + r.status
+    const key = normUrl(r.url) + '|' + r.status
     if (mergeSeen.has(key)) {
       const existing = merged.find(x => x._key === key)
       if (existing && !existing._methods.includes(r.method)) existing._methods.push(r.method)
@@ -485,7 +503,7 @@ function _renderFuzzNow() {
     const primaryMethod = r._methods[0]
     const extraMethods = r._methods.slice(1)
     const methodHtml = extraMethods.length
-      ? `<b style="color:var(--bright)">${esc(primaryMethod)}</b><span style="color:var(--dim);font-size:8px;margin-left:2px">+${extraMethods.map(esc).join('/')}</span>`
+      ? `<b style="color:var(--bright)">${esc(primaryMethod)}</b><span style="color:var(--dim);font-size:8px;margin-left:1px">+${extraMethods.map(esc).join('/')}</span>`
       : esc(primaryMethod)
     const fp = r.fp?.type || '-'
     const rid = 'p' + i // stable ID based on position
@@ -498,17 +516,18 @@ function _renderFuzzNow() {
     const isSpaHit = spaHashes.has(bodyHash(r))
     const hasSensitive = /"(?:user|pass|token|data|list|phone|email|name|id|role|perm|admin|secret|key|code|mobile)"/i.test(body) || /\b(?:成功|用户|密码|权限|数据)\b/.test(body)
     const sensitiveLabel = hasSensitive && !isSpaHit ? 'DATA' : ''
-    // 修复 URL 截断: title 给完整 URL (hover 看), path 字号 9px 让 mono 多塞 5-8 字符
-    html += `<div class="row fuzz-row${wasOpen?' sel':''}" data-rid="${rid}" title="${esc(r.url)}  ${primaryMethod}${extraMethods.length?' / '+extraMethods.join('/'):''}">
+    // 修复 URL 显示: 减小 method/badges 内边距 + path 字号 9px + 路径区 flex:1 min-width:0 + ellipsis 让 mono 多塞 8-12 字符
+    // title 始终给完整 URL + method 列表, hover 查看
+    const fullTitle = `${r.url}  ${primaryMethod}${extraMethods.length?' / '+extraMethods.join('/'):''}`
+    html += `<div class="row fuzz-row${wasOpen?' sel':''}" data-rid="${rid}" title="${esc(fullTitle)}">
       <span class="s-${~~(r.status/100)}xx">${r.status||'E'}</span>
-      <span class="method" style="min-width:32px">${methodHtml}</span>
-      <span class="path mono" style="font-size:9px">${esc(r.url)}</span>
-      ${isSpaHit ? '<span style="font-size:8px;color:var(--text-dim);background:rgba(94,109,140,.12);padding:1px 5px;border-radius:6px">SPA</span>' : ''}
-      ${sensitiveLabel ? '<span style="font-size:8px;font-weight:600;color:#fff;background:var(--grn);padding:1px 5px;border-radius:6px">'+sensitiveLabel+'</span>' : ''}
-      ${ctLabel ? `<span style="font-size:8px;color:${ctLabel==='JSON'?'var(--grn)':'var(--text-dim)'};background:rgba(255,255,255,.05);padding:1px 5px;border-radius:6px">${ctLabel}</span>` : ''}
-      ${needAuth ? '<span style="color:var(--amber);font-size:8px;font-weight:600;background:rgba(240,160,32,.15);padding:1px 5px;border-radius:8px">需鉴权</span>' : ''}
-      <span style="flex:1"></span>
-      <span style="font-size:9px;color:var(--text-dim)">${esc(fp)} ${(r.size||0)>1024?(r.size/1024).toFixed(1)+'K':(r.size||0)+'B'}</span>
+      <span class="method" style="min-width:28px;font-size:9px">${methodHtml}</span>
+      <span class="path mono" style="font-size:9px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.url)}</span>
+      ${isSpaHit ? '<span style="font-size:7px;color:var(--text-dim);background:rgba(94,109,140,.12);padding:0 4px;border-radius:4px;flex-shrink:0">SPA</span>' : ''}
+      ${sensitiveLabel ? '<span style="font-size:7px;font-weight:600;color:#fff;background:var(--grn);padding:0 4px;border-radius:4px;flex-shrink:0">'+sensitiveLabel+'</span>' : ''}
+      ${ctLabel ? `<span style="font-size:7px;color:${ctLabel==='JSON'?'var(--grn)':'var(--text-dim)'};background:rgba(255,255,255,.05);padding:0 4px;border-radius:4px;flex-shrink:0">${ctLabel}</span>` : ''}
+      ${needAuth ? '<span style="color:var(--amber);font-size:7px;font-weight:600;background:rgba(240,160,32,.15);padding:0 4px;border-radius:4px;flex-shrink:0">需鉴权</span>' : ''}
+      <span style="font-size:8px;color:var(--text-dim);flex-shrink:0;margin-left:4px;font-family:var(--mono)">${esc(fp)} ${(r.size||0)>1024?(r.size/1024).toFixed(1)+'K':(r.size||0)+'B'}</span>
     </div>
     <div class="resp-panel${wasOpen?' show':''}" id="${rid}"><div class="resp-hdr"><span>HTTP ${r.status||'?'} | ${r.contentType||'?'} | ${(r.size||0)}B</span><span onclick="event.stopPropagation()" style="cursor:pointer;color:var(--crimson)">X</span></div><div class="resp-body${r.status>=400?' error':''}">${_preview(r)}</div></div>`
   })
@@ -772,8 +791,11 @@ async function renderConfig() {
 
 // ====== 导出按钮 ======
 document.getElementById('btnHit').onclick = async () => {
-  const list = fuzzRes.filter(r => r.status!==404&&r.status!==0&&r.status!==501)
-  const text = list.length ? list.map(r=>r.url).join('\n') : (data.apis||[]).map(a=>a.path).join('\n')
+  // 与 _renderFuzzNow 同款过滤: 排除静态资源
+  const _norm = u => String(u||'').replace(/[\\\/]+$/,'').replace(/\\+$/,'')
+  const _isStaticAsset = u => /\.(woff2?|ttf|eot|otf|jpe?g|png|gif|svg|webp|avif|apng|ico|bmp|jsx?|tsx?|vue|mjs|cjs|css|scss|sass|less|styl|mp[34]|m4a|3gp|avi|mov|wmv|flv|webm|mkv|mp3|wav|ogg|oga|pdf|docx?|xlsx?|pptx?|txt|md|csv|wasm|webmanifest|manifest|map|br|gz|zip|rar|7z|tar|iso)(\?.*)?$/i.test(_norm(u))
+  const list = fuzzRes.filter(r => r.status!==404&&r.status!==0&&r.status!==501 && !_isStaticAsset(r.url))
+  const text = list.length ? list.map(r=>r.url).join('\n') : (data.apis||[]).filter(a=>!_isStaticAsset(a.path)).map(a=>a.path).join('\n')
   if (!text) return
   await navigator.clipboard.writeText(text)
   showTip('已复制 '+(list.length||(data.apis||[]).length)+' 条')
@@ -788,7 +810,7 @@ document.getElementById('btnExport').onclick = () => {
   const useFullUrl = document.getElementById('exportFullUrl').checked
   // 导出完整JSON数据（供导入使用）
   const exportData = {
-    version: '1.4',
+    version: '1.5',
     url: data.url || '',
     exportTime: new Date().toISOString(),
     apis: (data.apis||[]).map(a => ({ path: useFullUrl && data.url ? data.url.replace(/\/$/,'') + a.path : a.path, method: a.method, classify: a.classify })),
@@ -836,7 +858,7 @@ document.getElementById('fileImport').addEventListener('change', async (e) => {
     mergeSet('phones', p => p)
     mergeSet('githubRepos', g => g)
     if (imported.fuzzResults && imported.fuzzResults.length && !fuzzRes.length) fuzzRes = imported.fuzzResults
-    chrome.storage.local.set({ lastData: data, lastFuzzRes: fuzzRes.slice(0, 5000), lastFuzzTotal: fuzzRes.length })
+    chrome.storage.local.set({ lastData: data, lastFuzzRes: fuzzRes.slice(0, 5000), lastFuzzTotal: fuzzRes.length, lastFuzzUrl: data.url || imported.url || '' })
     updateBar(); render()
     showTip('已导入: ' + (imported.apis&&imported.apis.length||0) + ' API + ' + (imported.fuzzResults&&imported.fuzzResults.length||0) + ' Fuzz')
   } catch(err) { showTip('导入失败: ' + err.message) }

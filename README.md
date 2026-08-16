@@ -1,13 +1,13 @@
 <div align="center">
 
-# 🛰️ DesJsFinder v1.4
+# 🛰️ DesJsFinder v1.5
 
 ### 被动 JS 分析 + 动态扫描 + Wappalyzer 指纹 + 主动 Fuzz + 响应指纹 — 红队 API 挖掘利器
 
 > 开箱即用、自动采集、按需主动探测；为挖洞人写，为挖洞人用。
 
 <p>
-  <img src="https://img.shields.io/badge/version-1.4-ff3b5c?style=flat-square" alt="version"/>
+  <img src="https://img.shields.io/badge/version-1.5-ff3b5c?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/manifest-v3-4cc9f0?style=flat-square" alt="mv3"/>
   <img src="https://img.shields.io/badge/license-MIT-22d68b?style=flat-square" alt="license"/>
   <img src="https://img.shields.io/badge/platform-chrome%20%7C%20edge%20%7C%20brave-f5a623?style=flat-square" alt="platform"/>
@@ -164,6 +164,50 @@ src/core/
 
 ---
 
+## 📋 标签准确性说明
+
+**两类标签，两套判定逻辑，分别说清楚：**
+
+| 标签 | 出现位置 | 来源 | 准确性 |
+|---|---|---|---|
+| `SPA` / `HTML` / `JSON` / `DATA` / `需鉴权` | **Fuzz 探测结果** | 真实响应 — `Content-Type` 头 + 响应体内容 | ✅ **100% 基于实际响应**，无猜测 |
+| `认证鉴权` / `管理后台` / `Actuator端点` / `文件上传` / `CRITICAL` / `HIGH` / `MEDIUM` | **API 列表（接口tab）** | JS 文本里的路径关键词匹配 | ⚠️ **启发式分类**，偶有误报，保守策略 |
+
+**举例：**
+
+- `https://target/api/users/me` 返回 401 → 显示 `需鉴权` 标签（基于响应状态码）
+- `https://target/api/users/list` 返回 `Content-Type: application/json` + body 含 `"data":{"list":[...]}` → 显示 `DATA JSON`（基于响应内容）
+- `https://target/social/{x,y,z}` 3+ 个不同路径返回相同 HTML → 全部打 `SPA` 标签（基于响应体 hash 比对）
+- JS 里字符串 `/admin/login` → 被打成 `管理后台` + `HIGH`（基于关键词，可能误报——如果 `admin` 是用户名而非路径段）
+
+> **不要把 API 列表的分类当成定论**，它是给红队一个"先看哪里"的优先级；**Fuzz 探测结果的标签是基于实际响应的，可以信。**
+
+---
+
+## 📝 更新日志
+
+### v1.5 (2026-08) — UX & 噪音治理
+
+| 类别 | 改动 |
+|---|---|
+| 🐛 Bug | 静态资源（`.avif` / `.webmanifest` / `.wasm` 等）混入 fuzz 队列，扩展名清单统一化 |
+| 🐛 Bug | URL 末尾的 `\`（JS 字符串残留的转义符）绕过静态过滤，新增 `normalizePath()` 在所有提取/去重/分类节点归一化 |
+| 🐛 Bug | 跨站 fuzz 结果残留：popup 打开新站仍显示旧站结果，引入 `lastFuzzUrl` 比对 + `data.url` 变化时清空 |
+| 🐛 Bug | 重复 URL（`/social/feishu\` vs `/social/feishu`）未合并，dedup 键改用归一化 URL |
+| 🎨 UI | fuzz 行 URL 显示更长：method 列 32→28px、badges 7px + 圆角减半、path 用 `flex:1 min-width:0 ellipsis` 挤出 8-12 字符 |
+| ⚡ 性能 | 渲染前再做一道兜底过滤，静态资源在显示层就被剔除 |
+| 🔧 维护 | `STATIC_EXTS` 常量三处统一（`api-filter.js` / `background.js` / `popup.js`），加新扩展只改一处 |
+
+### v1.4 (2026-08) — HUD UI 改版
+
+暗色 HUD 风格、蓝图网格、扫描线、LED 脉冲、Phosphor 风格 SVG 图标全面替换 emoji；增加 Fuzz 速率档位；事件委托优化。
+
+### v1.3 — JS 参数提取
+
+集成 ParamX 引擎，9 种策略 × 4 类评分，一键构造 POST-JSON / GET 查询串。
+
+---
+
 ## 🆚 与同类工具对比
 
 | 工具 | 被动采集 | 主动 Fuzz | 框架识别 | Cookie 注入 | UI 体验 |
@@ -197,4 +241,4 @@ MIT © [Dest1ny](https://github.com/Dest1ny-Sec)
 
 ---
 
-<sub>🛰️ DesJsFinder · v1.4 · 红队 API 挖掘，从 JS 出发</sub>
+<sub>🛰️ DesJsFinder · v1.5 · 红队 API 挖掘，从 JS 出发</sub>

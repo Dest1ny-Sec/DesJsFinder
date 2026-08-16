@@ -8,26 +8,28 @@ class SvAPIFilter {
     // 与 filters/api-filter.js 完全一致的 6-pattern 提取逻辑
     if (!text||text.length<50) return []
     const found=new Set()
-    const isStatic=p=>/\.(woff2?|ttf|eot|otf|jpe?g|png|gif|svg|webp|ico|bmp|jsx?|tsx?|vue|mjs|cjs|css|scss|sass|less|mp[34]|avi|mov|wmv|flv|webm|mkv|mp3|wav|ogg|pdf|docx?|xlsx?|pptx?|txt|md|csv)(\?.*)?$/i.test(p)
+    // 统一静态扩展名 (与 api-filter.js STATIC_EXTS 同步, 增加 avif/webmanifest/wasm 等)
+    const isStatic=p=>{const x=p.replace(/[\\\/]+$/,'');return /\.(woff2?|ttf|eot|otf|jpe?g|png|gif|svg|webp|avif|apng|ico|bmp|jsx?|tsx?|vue|mjs|cjs|css|scss|sass|less|styl|mp[34]|m4a|3gp|avi|mov|wmv|flv|webm|mkv|mp3|wav|ogg|oga|pdf|docx?|xlsx?|pptx?|txt|md|csv|wasm|webmanifest|manifest|map|br|gz|zip|rar|7z|tar|iso)(\?.*)?$/i.test(x)}
+    const norm=p=>p.replace(/[\\\/]+$/,'').replace(/\\+$/,'').replace(/\/{2,}/g,'/')
     let m
     // P1: LinkFinder/JSFinder absolute+relative paths
     const re1=/["'`]((?:\/|\.\.\/|\.\/)[^"'><,;|(){}\[\]\s]{1,200})["'`]/g
-    while((m=re1.exec(text))!==null){const p=m[1];if(p.startsWith('/')&&p.length>=2&&!isStatic(p))found.add(p);else if(p.startsWith('.')&&p.length>=4&&!/\.(?:js|css|less|scss|png|jpg|gif|svg)$/i.test(p))found.add(p)}
+    while((m=re1.exec(text))!==null){const p=norm(m[1]);if(!p)continue;if(p.startsWith('/')&&p.length>=2&&!isStatic(p))found.add(p);else if(p.startsWith('.')&&p.length>=4&&!/\.(?:js|css|less|scss|png|jpg|gif|svg|avif|webmanifest)$/i.test(p))found.add(p)}
     // P2: JSFinder Group4 relative resources with extensions
     const re2=/["'`]([a-zA-Z0-9_\-\.\/]{3,}\.(?:[a-zA-Z]{1,4}|action|do|jspa)(?:\?[^"'`]{0,})?)["'`]/g
-    while((m=re2.exec(text))!==null)found.add(m[1])
+    while((m=re2.exec(text))!==null){const p=norm(m[1]);if(p)found.add(p)}
     // P3: incomplete path (xx/yy → /xx/yy)
     const re3=/["'`]([a-zA-Z][\w\/\.\-]{3,150})["'`]/g
-    while((m=re3.exec(text))!==null){const p=m[1];if(p.includes('/')&&!isStatic('/'+p)&&!/^https?:\/\//i.test(p))found.add('/'+p)}
+    while((m=re3.exec(text))!==null){const p=norm(m[1]);if(!p)continue;if(p.includes('/')&&!isStatic('/'+p)&&!/^https?:\/\//i.test(p))found.add('/'+p)}
     // P4: Vue/React route
     const re4=/(?:path|route|name)\s*:\s*["'`](\/[^"'`]{1,120})["'`]/gi
-    while((m=re4.exec(text))!==null){const p=m[1];if(p.length>=2&&!isStatic(p))found.add(p)}
+    while((m=re4.exec(text))!==null){const p=norm(m[1]);if(p&&p.length>=2&&!isStatic(p))found.add(p)}
     // P5: dynamic import
     const re5=/(?:import|require)\s*\(\s*["'`](\.[^"'`]{1,120})["'`]\s*\)/g
-    while((m=re5.exec(text))!==null){const p=m[1];if(p.length>=4&&!/\.(?:js|css|less|scss|sass|png|jpg|gif|svg)$/i.test(p))found.add(p)}
+    while((m=re5.exec(text))!==null){const p=norm(m[1]);if(p&&p.length>=4&&!/\.(?:js|css|less|scss|sass|png|jpg|gif|svg|avif|webmanifest)$/i.test(p))found.add(p)}
     // P6: url/base/prefix assignments
     const re6=/(?:url|base|prefix|api|href|action)\s*[:=]\s*["'`](\/[^"'`]{1,120})["'`]/gi
-    while((m=re6.exec(text))!==null){const p=m[1];if(p.length>=2&&!isStatic(p))found.add(p)}
+    while((m=re6.exec(text))!==null){const p=norm(m[1]);if(p&&p.length>=2&&!isStatic(p))found.add(p)}
     return [...found]
   }
   method(p){const l=p.toLowerCase();if(/\/login|\/register|\/create|\/add|\/save|\/upload|\/submit|\/batch/.test(l))return'POST';if(/\/update|\/edit|\/modify/.test(l))return'PUT';if(/\/delete|\/remove/.test(l))return'DELETE';return'GET'}

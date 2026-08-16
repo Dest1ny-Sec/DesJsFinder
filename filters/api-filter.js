@@ -2,15 +2,25 @@
 // API Filter — 路径提取 + 分类 (借鉴Phantom架构)
 // 注入到content script中,直接访问页面DOM
 // ============================================================
+// 公共静态扩展名清单 (各模块需保持同步: api-filter.js / background.js / popup.js / dict-generator.js)
+const STATIC_EXTS = 'woff2?|ttf|eot|otf|jpe?g|png|gif|svg|webp|avif|apng|ico|bmp|jsx?|tsx?|vue|mjs|cjs|css|scss|sass|less|styl|mp[34]|m4a|3gp|avi|mov|wmv|flv|webm|mkv|mp3|wav|ogg|oga|pdf|docx?|xlsx?|pptx?|txt|md|csv|wasm|webmanifest|manifest|map|br|gz|zip|rar|7z|tar|iso'
+// 路径归一化: 去除 JS 转义残留的末尾标点 (如 "feishu\" 实际就是 "feishu"), 多余尾斜杠
+function normalizePath(p) {
+  if (!p) return p
+  return String(p).replace(/[\\\/]+$/, '').replace(/\\+$/, '').replace(/\/{2,}/g, '/')
+}
+
 class APIFilter {
   constructor() {
     this.patterns = {
       font: /\.(woff2?|ttf|eot|otf)(\?.*)?$/i,
-      img: /\.(jpe?g|png|gif|svg|webp|ico|bmp)(\?.*)?$/i,
+      img: /\.(jpe?g|png|gif|svg|webp|avif|apng|ico|bmp)(\?.*)?$/i,
       js: /\.(jsx?|tsx?|vue|mjs|cjs)(\?.*)?$/i,
       css: /\.(css|scss|sass|less|styl)(\?.*)?$/i,
-      media: /\.(mp[34]|avi|mov|wmv|flv|webm|mkv|mp3|wav|ogg)(\?.*)?$/i,
+      media: /\.(mp[34]|m4a|3gp|avi|mov|wmv|flv|webm|mkv|mp3|wav|ogg|oga)(\?.*)?$/i,
       doc: /\.(pdf|docx?|xlsx?|pptx?|txt|md|csv)(\?.*)?$/i,
+      app: /\.(wasm|webmanifest|manifest)(\?.*)?$/i,
+      archive: /\.(map|br|gz|zip|rar|7z|tar|iso)(\?.*)?$/i,
       apiPrefix: /^\/(api|admin-api|v[0-9]+|gateway|rest|service|rpc|graphql|auth|system|console)\//,
       dynamic: /\.(aspx?|ashx)(\?.*)?$/i,
       hasQuery: /\?[^#\s]+/,
@@ -45,24 +55,29 @@ class APIFilter {
     const re1 = /["'`]((?:\/|\.\.\/|\.\/)[^"'><,;|(){}\[\]\s]{1,200})["'`]/g
     let m
     while ((m = re1.exec(text)) !== null) {
-      const p = m[1]
+      const p = normalizePath(m[1])
+      if (!p) continue
       if (p.startsWith('/') && p.length >= 2 && !this.isStatic(p)) found.add(p)
-      else if (p.startsWith('.') && p.length >= 4 && !/\.(?:js|css|less|scss|png|jpg|gif|svg)$/i.test(p)) found.add(p)
+      else if (p.startsWith('.') && p.length >= 4 && !/\.(?:js|css|less|scss|png|jpg|gif|svg|avif|webmanifest)$/i.test(p)) found.add(p)
     }
     // Pattern 2: JSFinder Group 4 — relative resources with extensions
     // [a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)
     const re2 = /["'`]([a-zA-Z0-9_\-\.\/]{3,}\.(?:[a-zA-Z]{1,4}|action|do|jspa)(?:\?[^"'`]{0,})?)["'`]/g
-    while ((m = re2.exec(text)) !== null) found.add(m[1])
+    while ((m = re2.exec(text)) !== null) {
+      const p = normalizePath(m[1])
+      if (p) found.add(p)
+    }
     // Pattern 3: FindSomething incomplete path (xx/yy → /xx/yy)
     const re3 = /["'`]([a-zA-Z][\w\/\.\-]{3,150})["'`]/g
     while ((m = re3.exec(text)) !== null) {
-      const p = m[1]
+      const p = normalizePath(m[1])
+      if (!p) continue
       if (/[?#=]/.test(p)) continue  // skip noise: query/hash/equals
       if (/^(true|false|undefined|null|none|yes|no|auto|default)$/i.test(p)) continue  // skip boolean
       if (/^[a-f0-9]{32,}$/i.test(p)) continue  // skip hex hash
       if (/%[0-9a-f]{2}/i.test(p)) continue  // skip url-encoded garbage (e.g. %3C%3E)
       if (/u[0-9a-f]{4}/i.test(p)) continue  // skip HTML unicode entities (e.g. u003e u003c)
-      if (/\.(jpe?g|png|gif|svg|webp|ico|bmp|avif|webmanifest|woff2?|ttf|eot|otf|mp[34]|avi|mov|wmv|flv|webm|mp3|wav|ogg|pdf|docx?|xlsx?|pptx?|txt|md|csv)/i.test(p)) continue  // skip media/files
+      if (new RegExp('\\.(?:' + STATIC_EXTS + ')', 'i').test(p)) continue  // skip media/files (统一清单)
       if (/^[\w\/\.-]+\.[a-z]{2,4}$/i.test(p) && !/\/(api|admin|rest|gateway|service|rpc)/i.test(p)) continue  // skip filename.ext unless API-related
       if (p.length > 120) continue  // skip unreasonably long
       if (/^[\w-]+\/[\w-]+$/.test(p) && !/(zh|en|ko|ja|fr|de|es|pt|ru|ar|hi)/.test(p.split('/')[0])) continue  // skip short two-segment non-locale paths
@@ -71,20 +86,20 @@ class APIFilter {
     // Pattern 4: Vue/React route definitions
     const re4 = /(?:path|route|name)\s*:\s*["'`](\/[^"'`]{1,120})["'`]/gi
     while ((m = re4.exec(text)) !== null) {
-      const p = m[1]
-      if (p.length >= 2 && !this.isStatic(p)) found.add(p)
+      const p = normalizePath(m[1])
+      if (p && p.length >= 2 && !this.isStatic(p)) found.add(p)
     }
     // Pattern 5: dynamic imports  import('./xxx'),  require('./xxx')
     const re5 = /(?:import|require)\s*\(\s*["'`](\.[^"'`]{1,120})["'`]\s*\)/g
     while ((m = re5.exec(text)) !== null) {
-      const p = m[1]
-      if (p.length >= 4 && !/\.(?:js|css|less|scss|sass|png|jpg|gif|svg)$/i.test(p)) found.add(p)
+      const p = normalizePath(m[1])
+      if (p && p.length >= 4 && !/\.(?:js|css|less|scss|sass|png|jpg|gif|svg|avif|webmanifest)$/i.test(p)) found.add(p)
     }
     // Pattern 6: url/base/prefix assignments
     const re6 = /(?:url|base|prefix|api|href|action)\s*[:=]\s*["'`](\/[^"'`]{1,120})["'`]/gi
     while ((m = re6.exec(text)) !== null) {
-      const p = m[1]
-      if (p.length >= 2 && !this.isStatic(p)) found.add(p)
+      const p = normalizePath(m[1])
+      if (p && p.length >= 2 && !this.isStatic(p)) found.add(p)
     }
     return [...found]
   }
@@ -112,9 +127,12 @@ class APIFilter {
   }
 
   isStatic(path) {
-    return this.patterns.font.test(path) || this.patterns.img.test(path) ||
-      this.patterns.js.test(path) || this.patterns.css.test(path) ||
-      this.patterns.media.test(path) || this.patterns.doc.test(path)
+    // 归一化: 末尾 \\ 或 / 不应影响扩展名识别 (JS 字符串里 "feishu\\" 实际是 "feishu")
+    const p = path ? path.replace(/[\\\/]+$/, '') : path
+    return this.patterns.font.test(p) || this.patterns.img.test(p) ||
+      this.patterns.js.test(p) || this.patterns.css.test(p) ||
+      this.patterns.media.test(p) || this.patterns.doc.test(p) ||
+      this.patterns.app.test(p) || this.patterns.archive.test(p)
   }
 }
 
