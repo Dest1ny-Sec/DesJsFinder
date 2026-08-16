@@ -1,94 +1,159 @@
-# DesJsFinder v1.3
+<div align="center">
 
-> 被动 JS 分析 + 动态扫描 + 深度扫描 + Wappalyzer 指纹识别 + 主动 Fuzz + 响应指纹 — 红队 API 挖掘利器
+# 🛰️ DesJsFinder v1.4
+
+### 被动 JS 分析 + 动态扫描 + Wappalyzer 指纹 + 主动 Fuzz + 响应指纹 — 红队 API 挖掘利器
+
+> 开箱即用、自动采集、按需主动探测；为挖洞人写，为挖洞人用。
+
+<p>
+  <img src="https://img.shields.io/badge/version-1.4-ff3b5c?style=flat-square" alt="version"/>
+  <img src="https://img.shields.io/badge/manifest-v3-4cc9f0?style=flat-square" alt="mv3"/>
+  <img src="https://img.shields.io/badge/license-MIT-22d68b?style=flat-square" alt="license"/>
+  <img src="https://img.shields.io/badge/platform-chrome%20%7C%20edge%20%7C%20brave-f5a623?style=flat-square" alt="platform"/>
+  <img src="https://img.shields.io/github/stars/Dest1ny-Sec/DesJsFinder?style=flat-square" alt="stars"/>
+  <img src="https://img.shields.io/github/forks/Dest1ny-Sec/DesJsFinder?style=flat-square" alt="forks"/>
+</p>
+
+</div>
+
+---
 
 ## 截图
 
-| API 接口采集 | Fuzz 探测 | 实战效果 |
+| 接口采集 | Fuzz 探测 | 指纹 / 实战 |
 |:---:|:---:|:---:|
 | ![API](5.png) | ![Fuzz](6.png) | ![实战](7.png) |
 
-## 功能
+> 暗色 HUD 风格 · 蓝图网格 · 扫描线 · LED 脉冲 · Phosphor 风格图标
 
-### 被动信息收集
+---
 
-打开目标网站即可自动采集，无需任何操作：
+## 🎯 它能干什么
 
-- **JS 资源拦截** — 自动下载页面所有 JS 文件（含内联脚本、modulepreload），正则提取隐藏 API 路径
-- **动态扫描** — MutationObserver 监听 DOM 变化 + SPA 路由劫持（pushState / replaceState / popstate / hashchange），自动增量采集
-- **深度扫描** — 递归分析 JS 中的 `import()` / `require()` 引用，Webpack chunk 路径自动推断和还原
+打开目标站，**插件自动开始干活**——下载 JS、提取 API、识别框架、收集凭据。需要主动挖的时候，按一下 **FUZZ**，字典 + runtime 参数 + 路径变形一并打过去。
 
-### Wappalyzer 指纹识别
+### 🟢 被动采集（无需任何操作）
 
-集成 [Wappalyzer](https://github.com/wappalyzer/wappalyzer) 开源指纹数据库，**3774 种技术 × 7925 条规则**，五种信号源：
+| 模块 | 干了啥 |
+|---|---|
+| **JS 资源拦截** | 自动下载所有 JS（含内联、modulepreload、动态 import），6-pattern 正则提取隐藏 API |
+| **运行时 API 捕获** | `fetch` / `XMLHttpRequest` monkey-patch（MAIN world），抓到响应体再做关键词提取 |
+| **参数提取** | 集成 [ParamX](https://github.com/daydust/ParamX) 引擎 — 9 种策略 × 4 类评分，一键构造 POST-JSON / GET 查询串 |
+| **动态扫描** | `MutationObserver` + SPA 路由劫持（pushState / replaceState / popstate / hashchange）+ iframe 监听 |
+| **深度扫描** | Webpack chunk 路径自动还原、import/require 递归 |
+| **凭据捕获** | 域名 / IP / 手机 / 邮箱 / JWT / 凭据 / GitHub repo / 公司名 / Cookie / localStorage 敏感项 |
 
-| 信号源 | 规则数 | 示例 |
-|--------|:---:|------|
-| scriptSrc | 49,445 | react.js → React，jquery.js → jQuery |
-| HTML | 11,937 | `<meta generator="WordPress">`，`data-v-` → Vue |
-| JS 全局变量 | 3,025 | `window.Vue`，`window.jQuery`，`__NEXT_DATA__` |
-| HTTP 响应头 | 495 | `Server: nginx`，`X-Powered-By: ThinkPHP` |
-| Cookie | 227 | `PHPSESSID` → PHP，`laravel_session` → Laravel |
+### 🟡 指纹识别（4 套并联）
 
-自动识别：Vue / React / Angular / Next.js / Nuxt / jQuery / Bootstrap / Spring / ThinkPHP / Laravel / Django / Flask / FastAPI / ASP.NET / Shiro / Nginx / Apache / IIS / Cloudflare 等数千种技术栈。
+- **Wappalyzer 引擎** — 3,774 种技术 × 7,925 条规则，5 种信号源（scriptSrc / HTML / JS globals / Header / Cookie）
+- **内置框架检测** — 芋道 / 若依 / Spring Boot / Cloud / ThinkPHP / Laravel / FastAPI / Django / Flask / ASP.NET / Shiro / Vue / React / Next.js / Webpack / Vite / ECharts / jQuery / Node.js / Jenkins / ES / Kibana / Swagger / Docker / … 40+ 框架
+- **HTTP 头指纹** — TideFinger 5,337 条关键词 + 16 条内置正则
+- **响应指纹** — 20 种漏洞指纹（Actuator / SQL 报错 / Git 泄露 / 凭据泄露 / ThinkPHP 报错 / Debug 模式 / Swagger / CORS / 目录遍历 / Cookie 无 HttpOnly / 500 错误 …）
 
-### 内置框架检测
+### 🔴 主动 Fuzz
 
-20 种框架关键词匹配 + HTTP 响应头分析 + Cookie 指纹：
+- **字典生成** — 16 种框架专用模板 + 通用 fuzzdicts 精选 + 已发现路径变形 + runtime 参数 + CRUD 推理
+- **三级降级** — Service Worker fetch → offscreen document（带 Cookie）→ 页面注入（绕过 CORS）
+- **速率档位** — 慢 1 并发 / 常 3 并发 / 快 5 并发，避开 WAF 限速
+- **代理联动** — HTTP / SOCKS 代理，配合 Burp Suite
+- **响应预览** — 点击行展开响应体，JSON 自动格式化
+- **结果筛选** — 非 404 / 2xx / 3xx / 401&403 / 4xx / 5xx 一键过滤
+- **SPA 识别** — 3+ 相同响应体自动标记为 SPA 路由，避免噪音
 
-- **后端框架**：芋道 Yudao / 若依 Ruoyi / Spring Boot / Spring Cloud / ThinkPHP / Laravel / Django / Flask / FastAPI / ASP.NET
-- **前端框架**：Vue.js / React / Angular / Next.js / Nuxt
-- **构建工具**：Webpack / Vite
-- **组件库**：jQuery / ECharts / Element UI / Ant Design
-- **安全框架**：Apache Shiro
+### 🛠 路径分类 + 攻击提示
 
-自动提取框架配置：`VITE_GLOB_API_URL_PREFIX`、`baseURL`、`apiHost` 等。
+- **16 类自动标注** — Actuator / 认证鉴权 / 文件上传 / 管理后台 / 交易支付 / 用户管理 / API 文档 / 数据查询 / 写入 / 基础设施 / 第三方对接 / 敏感文件 / 消息发送 / 工作流 / 业务模块，附风险评级（CRITICAL / HIGH / MEDIUM / INFO）
+- **框架攻击路径** — 命中 Spring / ThinkPHP / Laravel / Yudao / Ruoyi / FastAPI / Jenkins / ES / Kibana … 时自动弹提示，列出已知 RCE / 未授权端点
 
-### 响应指纹识别
+---
 
-20 种漏洞指纹，Fuzz 时自动匹配响应体：
+## 📦 安装
 
-| 指纹 | 风险 | 说明 |
-|------|:---:|------|
-| Actuator 暴露 | CRITICAL | Spring Boot Actuator 端点未授权 |
-| SQL 报错 | CRITICAL | 响应中包含 SQL 语法错误 — 疑似注入点 |
-| Git 泄露 | CRITICAL | `.git/HEAD` 可访问 |
-| 凭据泄露 | CRITICAL | 响应中泄露数据库密码、AK/SK、JWT 等 |
-| ThinkPHP 报错 | CRITICAL | ThinkPHP 框架调试信息泄露 |
-| Debug 模式 | HIGH | 应用运行在 Debug / 开发模式 |
-| 神策 Debug | HIGH | Sensors Analytics Debug 模式开启 |
-| Swagger 文档 | HIGH | API 文档公开可访问 |
-| CORS 全开放 | MEDIUM | `Access-Control-Allow-Origin: *` |
-| 目录遍历 | MEDIUM | Web 服务器目录列表开启 |
-| Cookie 无 HttpOnly | MEDIUM | 会话 Cookie 未设置安全标志 |
-| 500 错误 | MEDIUM | 服务端异常，参数可能可控 |
+```bash
+git clone https://github.com/Dest1ny-Sec/DesJsFinder.git
+```
 
-### HTTP 头指纹
+1. Chrome / Edge / Brave → `chrome://extensions`
+2. 打开「开发者模式」
+3. 「加载已解压的扩展程序」→ 选项目文件夹
 
-TideFinger 5337 条关键词 + 内置 16 条正则，识别 Server / X-Powered-By / X-AspNet-Version / Set-Cookie 等响应头，推断 Apache / Nginx / IIS / Jetty / OpenResty / Tengine / Cloudflare / PHP / Java / Python / Express 等。
+> 需要 Manifest V3 权限：`storage` / `scripting` / `activeTab` / `webRequest` / `proxy` / `offscreen` / `declarativeNetRequestWithHostAccess`
 
-### 路径分类
+---
 
-16 类自动标注 + 风险评级（CRITICAL / HIGH / MEDIUM / INFO）：
+## 🚀 使用
 
-Actuator 端点 / 认证鉴权 / 文件上传 / 管理后台 / 交易支付 / 用户管理 / API 文档 / 数据查询 / 数据写入 / 基础设施 / 第三方对接 / 敏感文件 / 消息发送 / 工作流 / 业务模块 / 其他 API
+### 被动收集
+
+打开目标站 → 插件图标实时显示 API 数量 → 点击图标看详情。**全程零操作。**
 
 ### 主动 Fuzz
 
-- **字典生成**：16 种框架专用模板 + 通用敏感路径字典 + 已发现路径变形 + 参数组合 + CRUD 推理
-- **并发探测**：5 并发，50ms 间隔，自动去重
-- **Token 注入**：支持自定义 Header（Authorization / Cookie / 自定义），自动捕获页面认证头
-- **Offscreen 请求**：Cookie 感知通道 + declarativeNetRequest 网络层动态 Header 注入，绕过 CORS
-- **三层降级**：Service Worker fetch → offscreen document → 页面注入，确保请求可达
-- **代理联动**：支持 HTTP / SOCKS 代理，配合 Burp Suite 使用
-- **响应预览**：点击 Fuzz 结果行展开响应体，JSON 自动格式化
-- **结果筛选**：非 404 / 2xx / 3xx / 401&403 / 4xx / 5xx 一键过滤
-- **SPA 检测**：自动识别 SPA 应用的前端路由 200 响应，标记区分
+1. （可选）顶部输入 Token：
+   ```
+   Authorization: Bearer eyJhbGciOi...
+   Cookie: JSESSIONID=abc123
+   ```
+2. 选速率档位（慢 / 常 / 快）
+3. 点 **FUZZ** 按钮
+4. 实时滚结果 → 点行展开响应体 → 切筛选器看不同状态码
 
-## 技术栈检测示例
+### 指纹 / 凭据 / 站点解析
+
+切到对应 tab，**插件把抓到的东西全列出来**——域名、IP、邮箱、JWT、凭据、GitHub repo、公司名、ICP 备案、IP 归属。
+
+> ICP / IP 查询需要 `cn.apihz.cn` 密钥，在「设置」里填。
+
+---
+
+## 🏗 架构
+
+```
+injector.js (MAIN world)
+  ├─ fetch / XHR monkey-patch → postMessage 拦截运行时 API
+  └─ Wappalyzer JS globals 扫描器 (每 5s)
+
+content.js (ISOLATED world)
+  ├─ 解析 JS URL + 内联脚本 + DOM 属性路径
+  ├─ Wappalyzer 引擎 → 3,774 种技术指纹
+  ├─ 20 种框架检测 + 配置提取
+  ├─ 域名 / IP / 手机 / 邮箱 / JWT / 凭据 / GitHub
+  ├─ MutationObserver 动态扫描 + SPA 路由劫持
+  └─ 发送到 background
+
+background.js (Service Worker)
+  ├─ 下载 JS → 提取 API → 框架识别 → 指纹 → Badge 计数
+  ├─ TideFinger 5,337 条 Header 关键词匹配
+  ├─ fuzzURL: fetch → offscreen (带 Cookie) → scripting (三级降级)
+  ├─ declarativeNetRequest 动态 Header 注入
+  └─ chrome.storage.local 跨重启持久化
+
+offscreen.html / offscreen.js
+  └─ Cookie 感知请求通道 (credentials: 'include')
+
+popup.html / popup.js
+  └─ 7 Tab UI (接口 / 实时 / 参数 / 凭据 / 指纹 / 设置 / 探测)
+
+filters/
+  ├─ wappalyzer-data.json       3,774 种技术 × 1.3MB
+  ├─ wappalyzer-engine.js       检测引擎 (HTML/scriptSrc/JS/Header/Cookie)
+  ├─ api-filter.js              路径提取 + 16 类分类 + HTTP 方法推测
+  ├─ framework-detect.js        40+ 框架 + 配置提取
+  ├─ response-fingerprint.js    20 种响应指纹
+  ├─ param-extract.js           9 种提取策略 × 5 类评分 (ParamX 内核)
+  └─ tide-fingerprint.js        5,337 条 Header 关键词
+
+src/core/
+  └─ dict-generator.js          16 种框架字典 + 通用字典 + CRUD 推理
+```
+
+---
+
+## 🧪 技术栈检测示例
 
 | 目标 | 自动识别 |
-|------|---------|
+|---|---|
 | 若依后台 | Ruoyi + Spring Boot + Java + Nginx |
 | 芋道系统 | Yudao + Vue.js + Spring Boot + MySQL |
 | Laravel 站点 | Laravel + PHP + Nginx + jQuery |
@@ -97,83 +162,39 @@ Actuator 端点 / 认证鉴权 / 文件上传 / 管理后台 / 交易支付 / �
 | React SPA | React + Webpack + Node.js + CDN |
 | Next.js 站点 | Next.js + React + Webpack + Vercel |
 
-## 安装
+---
 
-```bash
-git clone https://github.com/Dest1ny-Sec/DesJsFinder.git
-```
+## 🆚 与同类工具对比
 
-Chrome → `chrome://extensions` → 开启「开发者模式」→ 「加载已解压的扩展程序」→ 选择项目文件夹。
+| 工具 | 被动采集 | 主动 Fuzz | 框架识别 | Cookie 注入 | UI 体验 |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **DesJsFinder** | ✅ 自动 | ✅ 3 速率 | ✅ Wappalyzer | ✅ offscreen | ✅ 暗色 HUD |
+| JSFinder | ✅ | ❌ | ❌ | ❌ | 命令行 |
+| FindSomething | ✅ | ❌ | ❌ | ❌ | 浏览器 |
+| Packer-Fuzzer | ❌ | ✅ | ❌ | ❌ | 命令行 |
+| HaE | ✅ | ❌ | ❌ | ❌ | 浏览器 |
 
-## 使用
+---
 
-### 被动收集
+## 🤝 致谢
 
-打开目标站 → 插件图标实时显示 API 数量 → 点击图标查看详情。所有信息自动收集，无需操作。
+本项目站在以下开源巨人肩膀上：
 
-### 主动 Fuzz
+- [Wappalyzer](https://github.com/wappalyzer/wappalyzer) — 开源技术指纹库（3,774 种技术）
+- [ParamX](https://github.com/daydust/ParamX) — JS 参数提取引擎（已采纳）
+- [Phantom](https://github.com/Team-intN18-SoybeanSeclab/Phantom) — Offscreen document 请求架构
+- [FindSomething](https://github.com/residual/FindSomething) — 浏览器侧被动扫描思路
+- [SnowEyes](https://github.com/SickleSec/SnowEyes) — 动态扫描 / HTTP 头指纹
+- [JSFinder](https://github.com/Threezh1/JSFinder) — 早期 URL 提取算法
+- [TideFinger](https://github.com/TideSec/TideFinger) — 5,337 条 Header 关键词
+- [github-readme-stats](https://github.com/anuraghazra/github-readme-stats) — README 卡片思路
 
-1. （可选）在顶部输入框粘贴 Token：
-   ```
-   Authorization: Bearer eyJhbGciOi...
-   Cookie: JSESSIONID=abc123
-   ```
-2. 点击 **FUZZ** 按钮
-3. 自动生成字典并发探测，实时显示结果
-4. 点击结果行展开响应体，切换筛选器查看不同状态码
+---
 
-### 指纹查看
+## 📜 License
 
-切换到「指纹」Tab，查看 Wappalyzer + 内置框架检测 + HTTP 头指纹的合并结果，含置信度和版本号。
+MIT © [Dest1ny](https://github.com/Dest1ny-Sec)
 
-## 架构
+---
 
-```
-injector.js (MAIN world)
-  ├─ fetch / XMLHttpRequest monkey-patch → 拦截运行时 API 请求
-  └─ JS globals 扫描 → 发送到 content script
-
-content.js (ISOLATED world)
-  ├─ 提取 JS URL + 内联脚本 + DOM 属性路径
-  ├─ Wappalyzer 引擎 → 3774 种技术指纹检测
-  ├─ 20 种框架检测 + 配置提取
-  ├─ 域名 / IP / 手机号 / 邮箱 / JWT / 凭据提取
-  ├─ MutationObserver 动态扫描 + SPA 路由劫持
-  └─ 发送到 background
-
-background.js (Service Worker)
-  ├─ 下载 JS → 提取 API → 框架识别 → 指纹识别 → Badge 计数
-  ├─ TideFinger 5337 条 Header 关键词匹配
-  ├─ HTTP 头 / Cookie 指纹识别
-  ├─ fuzzURL: fetch → offscreen document → 页面注入（三层降级）
-  └─ declarativeNetRequest 动态 Header 注入
-
-offscreen.html / offscreen.js
-  └─ Cookie 感知请求通道 (credentials:'include')
-
-popup.html / popup.js
-  └─ 6 Tab UI (接口 / 实时 / 凭据 / 指纹 / 设置 / 探测)
-
-filters/
-  ├─ wappalyzer-data.json       3774 种技术指纹 (1.3MB)
-  ├─ wappalyzer-engine.js       检测引擎 (HTML/scriptSrc/JS/Header/Cookie)
-  ├─ api-filter.js              路径提取 + 16 类分类 + HTTP 方法推测
-  ├─ framework-detect.js        20 种框架 + 配置提取
-  ├─ response-fingerprint.js    20 种响应指纹
-  └─ tide-fingerprint.js        5337 条 Header 关键词
-
-src/core/
-  └─ dict-generator.js          16 种框架字典 + 通用字典 + CRUD 推理
-```
-
-## 致谢
-
-- [Wappalyzer](https://github.com/wappalyzer/wappalyzer) — 开源技术指纹库
-- [Phantom](https://github.com/Team-intN18-SoybeanSeclab/Phantom) — Offscreen 请求架构借鉴
-- [FindSomething](https://github.com/residual/FindSomething) — 被动扫描思路
-- [SnowEyes](https://github.com/SickleSec/SnowEyes) — 动态扫描 / HTTP 头指纹 / 网站解析
-- [JSFinder](https://github.com/Threezh1/JSFinder) — URL 提取算法
-
-## License
-
-MIT — Dest1ny
+<sub>🛰️ DesJsFinder · v1.4 · 红队 API 挖掘，从 JS 出发</sub>

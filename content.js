@@ -25,10 +25,12 @@
       const bundle = await dataResp.json()
       const engineCode = await engineResp.text()
       // Execute engine code in this context
+      // 修复: 原 replace('module\.exports','module._e=') 会生成 "module._e= = {...}" 语法错误,
+      // 且 fn({_e: mod},{}) 不会把导出写入 mod。改为正则替换 + 直接传 mod, 从 mod._e 读取导出。
       const mod = {}
-      const fn = new Function('module', 'exports', engineCode.replace('module\.exports', 'module._e='))
-      fn({ _e: mod }, {})
-      const EngineClass = mod.WappalyzerEngine
+      const fn = new Function('module', 'exports', engineCode.replace(/module\.exports\s*=/, 'module._e='))
+      fn(mod, {})
+      const EngineClass = mod._e?.WappalyzerEngine
       if (!EngineClass) return
       const engine = new EngineClass()
       engine.load(bundle.data)
@@ -136,11 +138,27 @@
     },
 
     credentials: (text) => {
-      const re = /(?:password|passwd|pwd|secret|token|api_key|apikey|access_key|auth|authorization)\s*[:=]\s*(?:["']?)([^"',;\s\)\]\}]{4,})(?:["']?)/gi
-      const found = []; let m
-      while ((m = re.exec(text)) !== null) {
+      const found = []
+      // Pattern A: password/passwd/pwd/secret = "value" (min 6 chars)
+      const reA = /(?:password|passwd|pwd|secret)\s*[:=]\s*["']([^"']{6,100})["']/gi
+      let m
+      while ((m = reA.exec(text)) !== null) {
         const val = m[1]
-        if (val && !/^(true|false|null|undefined|localhost|127\.0\.0\.1)$/i.test(val)) found.push(m[0].trim())
+        if (!val || val.length < 6) continue
+        if (/^(true|false|null|undefined)$/i.test(val)) continue
+        if (/\s/.test(val)) continue
+        found.push(val)
+      }
+      // Pattern B: token/api_key/apikey = "JWT/long_token" (must look like real secret)
+      const reB = /(?:token|api_?key|access_key|auth|authorization)\s*[:=]\s*["']([^"']{10,120})["']/gi
+      while ((m = reB.exec(text)) !== null) {
+        const val = m[1]
+        if (/^(true|false|null|undefined)$/i.test(val)) continue
+        if (/^(Bearer|Basic|token|key|id|secret)$/i.test(val)) continue
+        const isJwt = /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(val)
+        const isLongHex = /^[a-f0-9]{32,}$/i.test(val)
+        const isLongBase64 = /^[A-Za-z0-9+/]{40,}=*$/.test(val) && val.length > 30
+        if (isJwt || isLongHex || isLongBase64) found.push(val)
       }
       return [...new Set(found)]
     },
@@ -259,29 +277,36 @@
 
   // ========== 监听 injector.js 的运行时 API 拦截数据 ==========
   window.addEventListener('message', (event) => {
-    if (event.source !== window || !event.data || event.data.type !== '__desjsfinder_intercepted__') {
-      // Also handle Wappalyzer globals from injector
-      if (event.source !== window || !event.data || event.data.type !== '__desjsfinder_wap_globals__') return
-      if (event.data.globals && Object.keys(event.data.globals).length > 0) {
-        window.__desjsfinder_globals__ = event.data.globals
-        // Re-run Wappalyzer detection with new globals
-        if (wapReady) {
-          const wap = runWappalyzer()
-          if (wap.length) {
-            sendToBackground({
-              tasks: [], inlineScripts: [], apis: [],
-              url: location.href, title: document.title,
-              wap, isUpdate: true
-            })
-          }
+    if (event.source !== window || !event.data) return
+    const msgType = event.data.type
+    // Wappalyzer JS globals 信号源 (injector MAIN world 扫描 window 后发送)
+    // 修复: 原逻辑把此分支嵌套在提前 return 的死分支里永远不可达; 且 injector 实际以
+    // type='__desjsfinder_intercepted__', kind='wap-globals' 发送, 统一在此处理。
+    if ((msgType === '__desjsfinder_wap_globals__' || (msgType === '__desjsfinder_intercepted__' && event.data.kind === 'wap-globals')) && event.data.globals && Object.keys(event.data.globals).length > 0) {
+      window.__desjsfinder_globals__ = event.data.globals
+      // Re-run Wappalyzer detection with new globals
+      if (wapReady) {
+        const wap = runWappalyzer()
+        if (wap.length) {
+          sendToBackground({
+            tasks: [], inlineScripts: [], apis: [],
+            url: location.href, title: document.title,
+            wap, isUpdate: true
+          })
         }
       }
       return
     }
+    if (msgType !== '__desjsfinder_intercepted__') return
     const d = event.data;
     // Forward captured auth tokens to background
     if (d.kind === 'token' && d.authHeader) {
       try { chrome.runtime.sendMessage({ action: 'storeToken', token: d.authHeader, tabId: null }) } catch(e) {}
+      // Show in Creds tab too — only real Bearer/JWT tokens (not "Bearer " literal)
+      const hdr = (d.authHeader || '').trim()
+      if (hdr.length > 10 && hdr !== 'Bearer' && hdr !== 'Basic') {
+        sendToBackground({ creds: [hdr] })
+      }
       return
     }
     // Extract API path + params from runtime URL

@@ -41,7 +41,7 @@ class FrameworkDetect {
       { name: 'ECharts', key: 'echarts', prefix: '',
         match: ['echarts','echarts.init','zrender'], weight: 20 },
       { name: 'jQuery', key: 'jquery', prefix: '',
-        match: ['jQuery','\\$\\.ajax','\\$\\.get','\\$\$.post'], weight: 25 },
+        match: ['jQuery','$.ajax','$.get','$.post'], weight: 25 },
       { name: 'Node.js', key: 'nodejs', prefix: '/api',
         match: ['process.env','__dirname','require(','module.exports','Buffer.from'], weight: 30 },
     ]

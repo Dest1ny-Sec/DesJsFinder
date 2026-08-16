@@ -57,6 +57,15 @@ class APIFilter {
     const re3 = /["'`]([a-zA-Z][\w\/\.\-]{3,150})["'`]/g
     while ((m = re3.exec(text)) !== null) {
       const p = m[1]
+      if (/[?#=]/.test(p)) continue  // skip noise: query/hash/equals
+      if (/^(true|false|undefined|null|none|yes|no|auto|default)$/i.test(p)) continue  // skip boolean
+      if (/^[a-f0-9]{32,}$/i.test(p)) continue  // skip hex hash
+      if (/%[0-9a-f]{2}/i.test(p)) continue  // skip url-encoded garbage (e.g. %3C%3E)
+      if (/u[0-9a-f]{4}/i.test(p)) continue  // skip HTML unicode entities (e.g. u003e u003c)
+      if (/\.(jpe?g|png|gif|svg|webp|ico|bmp|avif|webmanifest|woff2?|ttf|eot|otf|mp[34]|avi|mov|wmv|flv|webm|mp3|wav|ogg|pdf|docx?|xlsx?|pptx?|txt|md|csv)/i.test(p)) continue  // skip media/files
+      if (/^[\w\/\.-]+\.[a-z]{2,4}$/i.test(p) && !/\/(api|admin|rest|gateway|service|rpc)/i.test(p)) continue  // skip filename.ext unless API-related
+      if (p.length > 120) continue  // skip unreasonably long
+      if (/^[\w-]+\/[\w-]+$/.test(p) && !/(zh|en|ko|ja|fr|de|es|pt|ru|ar|hi)/.test(p.split('/')[0])) continue  // skip short two-segment non-locale paths
       if (p.includes('/') && !this.isStatic('/'+p) && !/^(?:http|https):\/\//i.test(p)) found.add('/'+p)
     }
     // Pattern 4: Vue/React route definitions

@@ -153,8 +153,10 @@ const DictGenerator = {
       if (isStatic) { add(url, 'GET'); return }
       const m = this._method(url)
       add(url, m)
-      if (m !== 'GET') add(url, 'GET')
-      if (m !== 'POST') add(url, 'POST')
+      // 修复: 原逻辑 m !== 'GET' && m !== 'POST' 让每个 path 最多 fuzz 3 次 (原 method + GET + POST).
+      // 200 条 path 实际请求 600 次, 大量 POST {} 噪音. 改为只补一个错配 method 探测 method-not-allowed 行为.
+      if (m === 'GET') add(url, 'POST')
+      else add(url, 'GET')
     }
     // runtime URL params + POST body params
     const rp = (runtimeParams || []).slice(0, 15).filter(k => k.length >= 2 && k.length <= 20 && !/^(fp|msToken|a_bogus|timestamp|webid|verify)/i.test(k))

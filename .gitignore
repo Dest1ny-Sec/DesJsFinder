@@ -5,3 +5,8 @@ node_modules/
 .vscode/
 .idea/
 *.zip
+# Embedded git repos (kept for development, not for distribution)
+ParamX/
+CLAUDE.md
+# Dev preview
+ui-preview.png

