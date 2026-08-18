@@ -1,44 +1,10 @@
 <div align="center">
 
-<table style="background: #0B0E14; padding: 48px 56px; border-radius: 8px; color: #F5F1E8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; width: 100%; border-collapse: separate; border-spacing: 0;">
-<tr>
-<td style="width: 60%; vertical-align: top; padding-right: 24px;">
+<img src="assets/hero.png" width="100%" alt="DesJsFinder — 红队 API 挖掘利器" />
 
-<h1 style="font-size: 60px; font-weight: 800; color: #F5F1E8; margin: 0 0 12px 0; letter-spacing: 0.5px; line-height: 1.1;">DesJsFinder</h1>
-
-<p style="font-size: 22px; color: #C9C5BC; margin: 0 0 4px 0; font-weight: 600;">红队 API 挖掘利器</p>
-<p style="font-size: 16px; color: #8A93A6; margin: 0 0 8px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">被动采集 × 主动 Fuzz × 指纹识别</p>
-<p style="font-size: 14px; color: #5C6370; margin: 0 0 24px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">Red-team API miner · JS-driven</p>
-
-<p style="font-size: 20px; margin: 0 0 20px 0; line-height: 1.5;"><span style="color:#8A93A6; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">装扩展</span>&nbsp;&nbsp;<span style="color:#5C6370; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">→</span>&nbsp;&nbsp;<span style="color:#8A93A6; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">浏览目标</span>&nbsp;&nbsp;<span style="color:#5C6370; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">→</span>&nbsp;&nbsp;<span style="color:#7C5CFF; font-weight:700; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">自动采 JS</span>&nbsp;&nbsp;<span style="color:#5C6370; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">→</span>&nbsp;&nbsp;<span style="color:#8A93A6; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">提取 API</span></p>
-
-<p style="font-size: 16px; color: #8A93A6; margin: 0 0 28px 0; line-height: 1.7;">从 JS 出发，把每一个目标站拆给你看。</p>
-
-<p style="font-size: 13px; color: #5C6370; margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.3px;">JavaScript · Manifest V3 · Chrome / Edge / Brave</p>
-<p style="font-size: 13px; color: #5C6370; margin: 6px 0 0 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.3px;">11+ 内置 fingerprint · 0 配置 · 1-click 导出</p>
-
-</td>
-<td style="width: 40%; vertical-align: top;">
-
-<div style="background: #10141D; border: 1.5px solid #3A4150; border-radius: 10px; padding: 14px 18px 18px 18px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; line-height: 1.5;">
-
-<div style="display: flex; align-items: center; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid #1A2130; margin-bottom: 12px;">
-<span style="width: 9px; height: 9px; border-radius: 50%; background: #5C6370;"></span>
-<span style="width: 9px; height: 9px; border-radius: 50%; background: #5C6370;"></span>
-<span style="width: 9px; height: 9px; border-radius: 50%; background: #7C5CFF;"></span>
-<span style="color: #5C6370; font-size: 12px; margin-left: 10px;">desjsfinder · redteam</span>
 </div>
-
-<div style="color:#F5F1E8; font-weight:400;">$ desjsfinder start --target example.com</div><div style="color:#8A93A6; font-weight:400;">[+] 已加载 11 个 fingerprint 规则</div><div style="color:#8A93A6; font-weight:400;">[scan] 抓取 47 个 JS 文件 ...</div><div style="color:#8A93A6; font-weight:400;">[api]  发现 12 个 endpoint</div><div style="color:#8A93A6; font-weight:400;">       POST /api/v1/user/login</div><div style="color:#8A93A6; font-weight:400;">       GET  /api/v1/products</div><div style="color:#8A93A6; font-weight:400;">       POST /api/v1/order/submit</div><div style="color:#7C5CFF; font-weight:700;">[+] 3 个泄露: AWS_SECRET / JWT / Sentry</div><div style="color:#F5F1E8; font-weight:400;">$ ▮</div>
-</div>
-
-</td>
-</tr>
-</table>
 
 <br/>
-
-
 
 <div align="center">
   <img src="https://skillicons.dev/icons?i=javascript,typescript,chrome,firefox,html,css,jquery,vite,webpack,git" alt="stacks" />
