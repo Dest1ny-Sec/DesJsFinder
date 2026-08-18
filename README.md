@@ -1,49 +1,34 @@
 <div align="center">
 
-# 🛰️ DesJsFinder
+<div style="background: #0B0E14; padding: 56px 64px 40px 64px; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; color: #F5F1E8;">
 
-### *红队 API 挖掘利器 — 被动采集 × 主动 Fuzz × 指纹识别*
+<h1 style="font-size: 64px; font-weight: 800; color: #F5F1E8; margin: 0 0 16px 0; letter-spacing: 0.5px;">DesJsFinder</h1>
 
-**从 JS 出发，把每一个目标站拆给你看**
+<p style="font-size: 22px; color: #C9C5BC; margin: 0 0 4px 0; font-weight: 600;">红队 API 挖掘利器 — 被动采集 × 主动 Fuzz × 指纹识别</p>
+<p style="font-size: 16px; color: #8A93A6; margin: 0 0 28px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">Red-team API miner · JS-driven asset discovery</p>
 
-<p>
-  <a href="https://github.com/Dest1ny-Sec/DesJsFinder/stargazers">
-    <img src="https://img.shields.io/github/stars/Dest1ny-Sec/DesJsFinder?style=for-the-badge&logo=github&color=ff3b5c" alt="stars"/>
-  </a>
-  <a href="https://github.com/Dest1ny-Sec/DesJsFinder/network/members">
-    <img src="https://img.shields.io/github/forks/Dest1ny-Sec/DesJsFinder?style=for-the-badge&logo=github&color=4cc9f0" alt="forks"/>
-  </a>
-  <a href="https://github.com/Dest1ny-Sec/DesJsFinder/issues">
-    <img src="https://img.shields.io/github/issues/Dest1ny-Sec/DesJsFinder?style=for-the-badge&logo=github&color=f5a623" alt="issues"/>
-  </a>
-  <a href="https://github.com/Dest1ny-Sec/DesJsFinder/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/Dest1ny-Sec/DesJsFinder?style=for-the-badge&color=22d68b" alt="license"/>
-  </a>
+<p style="font-size: 20px; margin: 0 0 24px 0; line-height: 1.6;"><span style="color:#8A93A6; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">装扩展</span>&nbsp;&nbsp;<span style="color:#5C6370; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">→</span>&nbsp;&nbsp;<span style="color:#8A93A6; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">浏览目标</span>&nbsp;&nbsp;<span style="color:#5C6370; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">→</span>&nbsp;&nbsp;<span style="color:#7C5CFF; font-weight:700; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">自动采 JS</span>&nbsp;&nbsp;<span style="color:#5C6370; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">→</span>&nbsp;&nbsp;<span style="color:#8A93A6; font-weight:400; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">提取 API</span></p>
+
+<p style="font-size: 16px; color: #8A93A6; margin: 0 0 28px 0; line-height: 1.7;">从 JS 出发，把每一个目标站拆给你看。</p>
+
+<p style="font-size: 14px; color: #5C6370; margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.5px;">
+<strong style="color:#7C5CFF;">11+</strong> 内置 fingerprint &nbsp;·&nbsp; <strong style="color:#7C5CFF;">0</strong> 配置 &nbsp;·&nbsp; <strong style="color:#7C5CFF;">1-click</strong> 导出
 </p>
 
-<p>
-  <img src="https://img.shields.io/badge/version-1.5-ff3b5c?style=flat-square" alt="version"/>
-  <img src="https://img.shields.io/badge/manifest-v3-4cc9f0?style=flat-square" alt="mv3"/>
-  <img src="https://img.shields.io/badge/platform-Chrome%20%7C%20Edge%20%7C%20Brave-f5a623?style=flat-square" alt="platform"/>
-  <img src="https://img.shields.io/badge/size-2.4MB-22d68b?style=flat-square" alt="size"/>
-  <img src="https://img.shields.io/github/last-commit/Dest1ny-Sec/DesJsFinder?style=flat-square&color=4cc9f0" alt="last-commit"/>
-  <img src="https://img.shields.io/github/release-date/Dest1ny-Sec/DesJsFinder?style=flat-square&color=f5a623" alt="release"/>
-</p>
-
-<sub>为挖洞人写，为挖洞人用 · MIT License · 2024-2026</sub>
-
-<!-- Banner: 红队配色（黑→深红→洋红→橙） + waving -->
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0a0a,30:8B0000,70:DC143C,100:FF6B35&height=220&section=header&text=DesJsFinder&fontSize=64&fontColor=ffffff&fontAlignY=35&desc=JS%20%E5%87%BA%E5%8F%91%20%C2%B7%20API%20%E6%8C%96%E6%8E%98%20%C2%B7%20%E6%8C%87%E7%BA%B9%E8%AF%86%E5%88%AB&descSize=18&descColor=FFB3D9&animation=twinkling" />
-
-<div style="background: #0a0a0a; padding: 36px 40px; border-radius: 0 0 16px 16px; margin: -8px 0 24px 0; text-align: center;">
-  <img src="https://readme-typing-svg.herokuapp.com/?font=Fira+Code&size=28&weight=600&duration=2800&pause=1800&color=FF6B35&center=true&vCenter=true&repeat=true&width=900&height=70&lines=%E2%80%9C%E5%B8%AE%E6%88%91%E6%8E%90%E8%BF%99%E4%B8%AA%E7%AB%99%E7%82%B9%E2%80%9D%20%E2%86%92%20%E6%91%86%E5%BC%83%E4%BD%A0%E7%9A%84%20JS;%E2%80%9C%E8%BF%99%E4%B8%AA%20API%20%E5%93%AA%E9%87%8C%E5%88%B0%E2%80%9D%20%E2%86%92%20%E5%AE%83%E4%B8%8D%E5%9C%A8%20URL%20%E9%87%8C;%E2%80%9C%E6%89%BE%E5%88%B0%E7%9A%84%E6%98%AF%E4%BB%80%E4%B9%88%E6%8A%80%E6%9C%AF%E6%A0%88%E2%80%9D%20%E2%86%92%20%E5%BC%80%E5%A7%8B%E6%89%93" alt="" />
-</div>
+<p style="font-size: 13px; color: #5C6370; margin: 8px 0 0 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">JavaScript · Manifest V3 · Chrome / Edge / Brave</p>
 
 </div>
 
----
+<br/>
 
-## 🛠️ stacks
+## stacks
+
+<div align="center">
+  <img src="https://skillicons.dev/icons?i=javascript,typescript,chrome,firefox,html,css,jquery,vite,webpack,git" alt="stacks" />
+</div>
+
+
+
 
 <div align="center">
   <img src="https://skillicons.dev/icons?i=javascript,typescript,chrome,firefox,html,css,jquery,vite,webpack,git" alt="stacks" />
