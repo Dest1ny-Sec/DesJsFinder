@@ -32,11 +32,11 @@
 
 <sub>为挖洞人写，为挖洞人用 · MIT License · 2024-2026</sub>
 
-<!-- Banner: 暗紫渐变 + 副标题打字机 -->
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0118,30:3A0CA3,70:7B2CBF,100:FF006E&height=220&section=header&text=DesJsFinder&fontSize=64&fontColor=ffffff&fontAlignY=35&desc=JS%20%E5%87%BA%E5%8F%91%20%C2%B7%20API%20%E6%8C%96%E6%8E%98%20%C2%B7%20%E6%8C%87%E7%BA%B9%E8%AF%86%E5%88%AB&descSize=18&descColor=00D4AA&animation=twinkling" />
+<!-- Banner: 红队配色（黑→深红→洋红→橙） + waving -->
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0a0a,30:8B0000,70:DC143C,100:FF6B35&height=220&section=header&text=DesJsFinder&fontSize=64&fontColor=ffffff&fontAlignY=35&desc=JS%20%E5%87%BA%E5%8F%91%20%C2%B7%20API%20%E6%8C%96%E6%8E%98%20%C2%B7%20%E6%8C%87%E7%BA%B9%E8%AF%86%E5%88%AB&descSize=18&descColor=FFB3D9&animation=twinkling" />
 
-<div style="background: #0a0118; padding: 36px 40px; border-radius: 0 0 16px 16px; margin: -8px 0 24px 0; text-align: center;">
-  <img src="https://readme-typing-svg.herokuapp.com/?font=Fira+Code&size=28&weight=600&duration=2800&pause=1800&color=00D4AA&center=true&vCenter=true&repeat=true&width=900&height=70&lines=%E2%80%9C%E5%B8%AE%E6%88%91%E6%8E%90%E8%BF%99%E4%B8%AA%E7%AB%99%E7%82%B9%E2%80%9D%20%E2%86%92%20%E6%91%86%E5%BC%83%E4%BD%A0%E7%9A%84%20JS;%E2%80%9C%E8%BF%99%E4%B8%AA%20API%20%E5%93%AA%E9%87%8C%E5%88%B0%E2%80%9D%20%E2%86%92%20%E5%AE%83%E4%B8%8D%E5%9C%A8%20URL%20%E9%87%8C;%E2%80%9C%E6%89%BE%E5%88%B0%E7%9A%84%E6%98%AF%E4%BB%80%E4%B9%88%E6%8A%80%E6%9C%AF%E6%A0%88%E2%80%9D%20%E2%86%92%20%E5%BC%80%E5%A7%8B%E6%89%93" alt="" />
+<div style="background: #0a0a0a; padding: 36px 40px; border-radius: 0 0 16px 16px; margin: -8px 0 24px 0; text-align: center;">
+  <img src="https://readme-typing-svg.herokuapp.com/?font=Fira+Code&size=28&weight=600&duration=2800&pause=1800&color=FF6B35&center=true&vCenter=true&repeat=true&width=900&height=70&lines=%E2%80%9C%E5%B8%AE%E6%88%91%E6%8E%90%E8%BF%99%E4%B8%AA%E7%AB%99%E7%82%B9%E2%80%9D%20%E2%86%92%20%E6%91%86%E5%BC%83%E4%BD%A0%E7%9A%84%20JS;%E2%80%9C%E8%BF%99%E4%B8%AA%20API%20%E5%93%AA%E9%87%8C%E5%88%B0%E2%80%9D%20%E2%86%92%20%E5%AE%83%E4%B8%8D%E5%9C%A8%20URL%20%E9%87%8C;%E2%80%9C%E6%89%BE%E5%88%B0%E7%9A%84%E6%98%AF%E4%BB%80%E4%B9%88%E6%8A%80%E6%9C%AF%E6%A0%88%E2%80%9D%20%E2%86%92%20%E5%BC%80%E5%A7%8B%E6%89%93" alt="" />
 </div>
 
 </div>
