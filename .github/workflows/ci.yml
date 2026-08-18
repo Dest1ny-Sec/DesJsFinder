@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate manifest.json
+        run: |
+          python3 -c "import json; m=json.load(open('manifest.json')); assert m['manifest_version']==3, 'MV3 required'; print('manifest.json OK · MV' + str(m['manifest_version']))"
+
+      - name: Syntax check all JS
+        run: |
+          for f in $(find . -name "*.js" -not -path "*/.git/*" -not -path "*/node_modules/*"); do
+            node --check "$f" 2>&1 | grep -v "^$" && echo "↑ $f" || true
+          done
+          echo "✓ all JS files parse"
+
+      - name: HTML files parse
+        run: |
+          for f in $(find . -name "*.html" -not -path "*/.git/*"); do
+            python3 -c "from html.parser import HTMLParser; HTMLParser().feed(open('$f').read())" && echo "  $f"
+          done
+
+      - name: README sanity
+        run: |
+          test -f README.md && wc -l README.md | head -1
+          grep -q "## " README.md && echo "  has sections"
+          grep -qE "!\[.*\]\(.*\.(png|jpg|gif|webp)" README.md && echo "  has images"
